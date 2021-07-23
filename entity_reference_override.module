@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file
+ * Contains
+ */
+
+/**
+ * Implements hook_entity_presave().
+ */
+function entity_reference_override_entity_presave(\Drupal\Core\Entity\EntityInterface $entity) {
+  if (isset($entity->overwritten) && $entity->overwritten === TRUE) {
+    throw new \Exception('not allowed');
+  }
+}
