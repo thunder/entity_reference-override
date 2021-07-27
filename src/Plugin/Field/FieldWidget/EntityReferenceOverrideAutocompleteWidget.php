@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains
- */
 
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
@@ -53,9 +49,14 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
 
     $element['edit'] = [
       '#type' => 'link',
-      '#title' => sprintf('Overwrite %s in context of this %s', 'media', $entity->getEntityType()->getSingularLabel()),
-      '#url' => Url::fromRoute('entity_reference_override.form', ['entity_type' => $entity->getEntityTypeId(), 'entity_id' => $entity->id(), 'field_name' => $field_name, 'delta' => $delta]),
-
+      '#title' => sprintf('Overwrite %s in context of this %s', 'media', $entity->getEntityType()
+        ->getSingularLabel()),
+      '#url' => Url::fromRoute('entity_reference_override.form', [
+        'entity_type' => $entity->getEntityTypeId(),
+        'entity_id' => $entity->id(),
+        'field_name' => $field_name,
+        'delta' => $delta,
+      ]),
       '#attributes' => [
         'class' => ['use-ajax', 'button'],
         'data-dialog-type' => 'modal',

@@ -40,7 +40,6 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    * {@inheritdoc}
    */
   public static function schema(FieldStorageDefinitionInterface $field_definition) {
-
     $schema = parent::schema($field_definition);
 
     $schema['columns']['overwritten_property_map'] = [
@@ -49,6 +48,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       'size' => 'big',
       'serialize' => TRUE,
     ];
+
     return $schema;
   }
 
@@ -63,6 +63,9 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
         $this->overwriteFields($entity, $this->values['overwritten_property_map']);
         $translation = $entity->getTranslation($this->getLangcode());
         $this->overwriteFields($translation, $this->values['overwritten_property_map']);
+
+        $entity->addCacheableDependency($this->getEntity());
+        $entity->overwritten = TRUE;
       }
 
       return $entity;
@@ -85,7 +88,6 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       }
       $entity->set($key, $values);
     }
-    $entity->overwritten = TRUE;
   }
 
   /**
@@ -110,10 +112,13 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    */
   public static function defaultFieldSettings() {
     return [
-        'overwritable_properties' => [],
-      ] + parent::defaultFieldSettings();
+      'overwritable_properties' => [],
+    ] + parent::defaultFieldSettings();
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fieldSettingsForm(array $form, FormStateInterface $form_state) {
     $form = parent::fieldSettingsForm($form, $form_state);
 
@@ -153,6 +158,5 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
     }
     return $form;
   }
-
 
 }

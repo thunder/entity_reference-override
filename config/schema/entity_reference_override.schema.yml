@@ -5,3 +5,7 @@ field.storage_settings.entity_reference_override:
 field.field_settings.entity_reference_override:
   type: field.field_settings.entity_reference
   label: 'Media settings'
+  mapping:
+    overwritable_properties:
+      type: sequence
+      label: 'Properties to overwrite'

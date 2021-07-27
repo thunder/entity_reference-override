@@ -2,6 +2,6 @@ entity_reference_override.form:
   path: '/entity_reference_override/edit/{entity_type}/{entity_id}/{field_name}/{delta}'
   defaults:
     _form: 'Drupal\entity_reference_override\Form\EditForm'
-    _title: 'Personal information'
+    _title: 'Override files in context.'
   requirements:
     _custom_access: '\Drupal\entity_reference_override\Form\EditForm::access'
