@@ -18,7 +18,11 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['entity_test', 'language', 'entity_reference_override'];
+  protected static $modules = [
+    'entity_test',
+    'language',
+    'entity_reference_override',
+  ];
 
   /**
    * {@inheritdoc}
@@ -167,7 +171,8 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
       ])->save();
       file_put_contents('public://' . $language_id . '.png', '');
     }
-    $available_langcodes = array_keys($this->container->get('language_manager')->getLanguages());
+    $available_langcodes = array_keys($this->container->get('language_manager')
+      ->getLanguages());
 
     $mediaType = $this->createMediaType('file');
     $media = $this->generateMedia('test.patch', $mediaType);

@@ -56,23 +56,29 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    * {@inheritdoc}
    */
   public function __get($name) {
-    if ($name == 'entity') {
+    if ($name == 'entity' && !empty($this->values['overwritten_property_map'])) {
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $entity = parent::__get('entity');
-      if (!empty($this->values['overwritten_property_map'])) {
-        $this->overwriteFields($entity, $this->values['overwritten_property_map']);
-        $translation = $entity->getTranslation($this->getLangcode());
-        $this->overwriteFields($translation, $this->values['overwritten_property_map']);
 
-        $entity->addCacheableDependency($this->getEntity());
-        $entity->overwritten = TRUE;
-      }
+      $this->overwriteFields($entity, $this->values['overwritten_property_map']);
+      $translation = $entity->getTranslation($this->getLangcode());
+      $this->overwriteFields($translation, $this->values['overwritten_property_map']);
 
+      $entity->addCacheableDependency($this->getEntity());
+      $entity->overwritten = TRUE;
       return $entity;
     }
     return parent::__get($name);
   }
 
+  /**
+   * Override entity fields.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to override.
+   * @param array $overwritten_property_map
+   *   The new values.
+   */
   protected function overwriteFields(EntityInterface $entity, array $overwritten_property_map) {
     foreach ($overwritten_property_map as $key => $value) {
       if (is_array($value)) {
@@ -124,7 +130,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
 
     $form['overwritable_properties'] = [
       '#type' => 'details',
-      '#title' => t('Overwritable properties'),
+      '#title' => $this->t('Overwritable properties'),
       '#open' => TRUE,
       '#tree' => TRUE,
     ];
@@ -139,7 +145,6 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       $form['overwritable_properties'][$bundle_id] = [
         '#type' => 'details',
         '#title' => $bundle_id,
-        '#group' => 'advanced',
       ];
 
       $options = [];

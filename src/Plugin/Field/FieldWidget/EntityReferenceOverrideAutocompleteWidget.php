@@ -31,6 +31,12 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $entity = $items->getEntity();
     $field_name = $this->fieldDefinition->getName();
 
+    /** @var \Drupal\Core\Entity\EntityInterface $referencedEntity */
+    $referencedEntity = $entity->{$field_name}->get($delta)->entity;
+    if ($entity->isNew() || empty($referencedEntity)) {
+      return $element;
+    }
+
     $value = '';
     if (!empty($entity->{$field_name}->get($delta)->overwritten_property_map)) {
       $value = Json::encode($entity->{$field_name}->get($delta)->overwritten_property_map);
@@ -49,8 +55,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
 
     $element['edit'] = [
       '#type' => 'link',
-      '#title' => sprintf('Overwrite %s in context of this %s', 'media', $entity->getEntityType()
-        ->getSingularLabel()),
+      '#title' => sprintf('Override %s in context of this %s',
+        $referencedEntity->getEntityType()->getSingularLabel(),
+        $entity->getEntityType()->getSingularLabel()),
       '#url' => Url::fromRoute('entity_reference_override.form', [
         'entity_type' => $entity->getEntityTypeId(),
         'entity_id' => $entity->id(),

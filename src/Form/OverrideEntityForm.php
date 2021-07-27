@@ -19,7 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Implements an example form.
  */
-class EditForm extends FormBase {
+class OverrideEntityForm extends FormBase {
 
   use AjaxFormHelperTrait;
 
@@ -152,12 +152,23 @@ class EditForm extends FormBase {
     $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
       ->load($arguments['entity_id']);
 
-    $entity->{$arguments['field_name']}->get($arguments['delta'])->overwritten_property_map = $this->getOverwrittenValues($form, $form_state, $entity);
+    $entity->{$arguments['field_name']}->get($arguments['delta'])->overwritten_property_map = $this->getOverwrittenValues($form_state, $entity);
     $entity->save();
 
   }
 
-  protected function getOverwrittenValues(array $form, FormStateInterface $form_state, EntityInterface $entity) {
+  /**
+   * Get overwritten values for an entity.
+   *
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The parent entity.
+   *
+   * @return string
+   *   The overridden values as JSON.
+   */
+  protected function getOverwrittenValues(FormStateInterface $form_state, EntityInterface $entity) {
     $arguments = $form_state->get('entity_reference_override');
 
     /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
@@ -176,6 +187,12 @@ class EditForm extends FormBase {
     return Json::encode($values);
   }
 
+  /**
+   * The access function.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   The access result.
+   */
   public static function access() {
     return AccessResult::allowed();
   }
@@ -192,7 +209,7 @@ class EditForm extends FormBase {
     $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
       ->load($arguments['entity_id']);
 
-    $values = $this->getOverwrittenValues($form, $form_state, $entity);
+    $values = $this->getOverwrittenValues($form_state, $entity);
 
     $selector = "[name=\"{$arguments['field_name']}[{$arguments['delta']}][overwritten_property_map]\"]";
 

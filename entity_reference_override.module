@@ -1,13 +1,16 @@
 <?php
+
 /**
  * @file
- * Contains
+ * The entity_reference_override hook implementations.
  */
+
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Implements hook_entity_presave().
  */
-function entity_reference_override_entity_presave(\Drupal\Core\Entity\EntityInterface $entity) {
+function entity_reference_override_entity_presave(EntityInterface $entity) {
   if (isset($entity->overwritten) && $entity->overwritten === TRUE) {
     throw new \Exception('not allowed');
   }
