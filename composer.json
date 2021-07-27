@@ -1,0 +1,12 @@
+{
+    "name": "drupal/entity_reference_override",
+    "description": "Store context specific overrides for entity reference fields.",
+    "type": "drupal-module",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Christian Fritsch",
+            "email": "christian.fritsch@burda.com"
+        }
+    ]
+}
