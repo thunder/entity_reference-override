@@ -56,16 +56,19 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    * {@inheritdoc}
    */
   public function __get($name) {
-    if ($name == 'entity' && !empty($this->values['overwritten_property_map'])) {
+    if ($name == 'entity' && !empty(parent::__get('entity'))) {
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-      $entity = parent::__get('entity');
+      $entity = clone parent::__get('entity');
+      if (!empty($this->values['overwritten_property_map'])) {
+        $this->overwriteFields($entity, $this->values['overwritten_property_map']);
+        $translation = $entity->getTranslation($this->getLangcode());
+        $this->overwriteFields($translation, $this->values['overwritten_property_map']);
 
-      $this->overwriteFields($entity, $this->values['overwritten_property_map']);
-      $translation = $entity->getTranslation($this->getLangcode());
-      $this->overwriteFields($translation, $this->values['overwritten_property_map']);
+        $entity->overwritten = TRUE;
+      }
 
       $entity->addCacheableDependency($this->getEntity());
-      $entity->overwritten = TRUE;
+      $entity->addCacheContexts(['overridden_reference_field:' . $this->getFieldDefinition()->getUniqueIdentifier()]);
       return $entity;
     }
     return parent::__get($name);
@@ -152,10 +155,11 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
         }
       }
 
+      $overridable_properties = $this->getSetting('overwritable_properties');
       $form['overwritable_properties'][$bundle_id]['options'] = [
         '#type' => 'checkboxes',
         '#options' => $options,
-        '#default_value' => $this->getSetting('overwritable_properties')[$bundle_id]['options'],
+        '#default_value' => $overridable_properties ? $overridable_properties[$bundle_id]['options'] : [],
       ];
 
     }
