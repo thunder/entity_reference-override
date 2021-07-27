@@ -6,13 +6,14 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\entity_reference_override\Exception\ReadOnlyEntityException;
 
 /**
  * Implements hook_entity_presave().
  */
 function entity_reference_override_entity_presave(EntityInterface $entity) {
   if (isset($entity->overwritten) && $entity->overwritten === TRUE) {
-    throw new \Exception('not allowed');
+    throw new ReadOnlyEntityException(sprintf('The entity (ID: %s, entity_type: %s) is overridden and not allowed to be saved.', $entity->id(), $entity->getEntityTypeId()));
   }
 }
 

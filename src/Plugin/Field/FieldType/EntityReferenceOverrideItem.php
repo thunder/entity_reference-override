@@ -80,19 +80,17 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    *   The new values.
    */
   protected function overwriteFields(EntityInterface $entity, array $overwritten_property_map) {
-    foreach ($overwritten_property_map as $key => $value) {
-      if (is_array($value)) {
-        // Remove keys that don't exists in original media entity.
-        $values = array_intersect_key($value, $entity->get($key)->getValue());
+    foreach ($overwritten_property_map as $field_name => $field_value) {
+      $values = $field_value;
+      if (is_array($field_value)) {
+        // Remove keys that don't exists in original entity.
+        $field_value = array_intersect_key($field_value, $entity->get($field_name)->getValue());
         $values = NestedArray::mergeDeepArray([
-          $entity->get($key)->getValue(),
-          $values,
+          $entity->get($field_name)->getValue(),
+          $field_value,
         ], TRUE);
       }
-      else {
-        $values = $value;
-      }
-      $entity->set($key, $values);
+      $entity->set($field_name, $values);
     }
   }
 

@@ -89,7 +89,7 @@ class OverrideEntityForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'edit_form';
+    return 'override_entity_form';
   }
 
   /**
