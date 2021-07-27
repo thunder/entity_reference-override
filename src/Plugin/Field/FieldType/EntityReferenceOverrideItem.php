@@ -65,6 +65,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
           $translation = $entity->getTranslation($this->getLangcode());
           $this->overwriteFields($translation, $this->values['overwritten_property_map']);
         }
+        $entity->overwritten = TRUE;
       }
 
       $entity->addCacheableDependency($this->getEntity());
