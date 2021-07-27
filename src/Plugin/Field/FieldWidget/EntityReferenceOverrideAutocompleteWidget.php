@@ -61,6 +61,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#url' => Url::fromRoute('entity_reference_override.form', [
         'entity_type' => $entity->getEntityTypeId(),
         'entity_id' => $entity->id(),
+        'langcode' => $entity->language()->getId(),
         'field_name' => $field_name,
         'delta' => $delta,
       ]),

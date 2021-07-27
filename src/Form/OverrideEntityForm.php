@@ -95,11 +95,12 @@ class OverrideEntityForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, string $entity_type = NULL, int $entity_id = NULL, string $field_name = NULL, $delta = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, string $entity_type = NULL, string $langcode = NULL, int $entity_id = NULL, string $field_name = NULL, $delta = NULL) {
 
-    /** @var \Drupal\Core\Entity\EntityInterface $entity */
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $entity = $this->entityTypeManager->getStorage($entity_type)
       ->load($entity_id);
+    $entity = $entity->getTranslation($langcode);
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $entity->{$field_name}->get($delta)->entity;
@@ -127,6 +128,7 @@ class OverrideEntityForm extends FormBase {
     $form_state->set('entity_reference_override', [
       'entity_type' => $entity_type,
       'entity_id' => $entity_id,
+      'langcode' => $langcode,
       'field_name' => $field_name,
       'delta' => $delta,
     ]);
@@ -151,6 +153,7 @@ class OverrideEntityForm extends FormBase {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
     $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
       ->load($arguments['entity_id']);
+    $entity = $entity->getTranslation($arguments['langcode']);
 
     $entity->{$arguments['field_name']}->get($arguments['delta'])->overwritten_property_map = $this->getOverwrittenValues($form_state, $entity);
     $entity->save();
@@ -208,6 +211,7 @@ class OverrideEntityForm extends FormBase {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
     $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
       ->load($arguments['entity_id']);
+    $entity = $entity->getTranslation($arguments['langcode']);
 
     $values = $this->getOverwrittenValues($form_state, $entity);
 
