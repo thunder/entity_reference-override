@@ -17,7 +17,7 @@ use Drupal\Core\TypedData\MapDataDefinition;
  *   label = @Translation("Entity reference override"),
  *   description = @Translation("An entity field containing an entity reference and additional data."),
  *   category = @Translation("Reference"),
- *   default_widget = "entity_reference_autocomplete",
+ *   default_widget = "entity_reference_override_autocomplete",
  *   default_formatter = "entity_reference_label",
  *   list_class = "\Drupal\Core\Field\EntityReferenceFieldItemList"
  * )
@@ -68,7 +68,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       }
 
       $entity->addCacheableDependency($this->getEntity());
-      $entity->addCacheContexts(['overridden_reference_field:' . $this->getFieldDefinition()->getUniqueIdentifier()]);
+      $entity->addCacheContexts(['overridden_reference_field:' . $this->getPropertyPath()]);
       return $entity;
     }
     return parent::__get($name);
