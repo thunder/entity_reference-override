@@ -83,6 +83,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       if (!empty($value['overwritten_property_map'])) {
         $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map']);
       }
+      else {
+        $values[$key]['overwritten_property_map'] = [];
+      }
     }
     return $values;
   }
