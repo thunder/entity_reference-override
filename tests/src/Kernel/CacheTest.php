@@ -15,7 +15,7 @@ class CacheTest extends EntityReferenceOverrideTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $field_name = 'field_reference_override_2';
@@ -79,11 +79,8 @@ class CacheTest extends EntityReferenceOverrideTestBase {
 
     $entity->save();
 
-    $uuid = $entity->field_reference_override->getFieldDefinition()->getUniqueIdentifier();
-    $this->assertContains('overridden_reference_field:' . $uuid, $entity->field_reference_override->entity->getCacheContexts());
-
-    $uuid = $entity->field_reference_override_2->getFieldDefinition()->getUniqueIdentifier();
-    $this->assertContains('overridden_reference_field:' . $uuid, $entity->field_reference_override_2->entity->getCacheContexts());
+    $this->assertContains('overridden_reference_field:field_reference_override.0', $entity->field_reference_override->entity->getCacheContexts());
+    $this->assertContains('overridden_reference_field:field_reference_override_2.0', $entity->field_reference_override_2->entity->getCacheContexts());
   }
 
   /**
