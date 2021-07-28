@@ -95,7 +95,12 @@ class OverrideEntityForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, string $entity_type = NULL, int $entity_id = NULL, string $field_name = NULL, $delta = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
+
+    $entity_type = $form_state->get('entity_reference_override')['entity_type'];
+    $entity_id = $form_state->get('entity_reference_override')['entity_id'];
+    $field_name = $form_state->get('entity_reference_override')['field_name'];
+    $delta = $form_state->get('entity_reference_override')['delta'];
 
     /** @var \Drupal\Core\Entity\EntityInterface $entity */
     $entity = $this->entityTypeManager->getStorage($entity_type)
@@ -120,19 +125,13 @@ class OverrideEntityForm extends FormBase {
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Save'),
+      '#value' => $this->t('Save2'),
       '#button_type' => 'primary',
     ];
+    $form['actions']['submit']['#ajax']['callback'] = [OverrideEntityForm::class, 'ajaxSubmit'];
 
-    $form_state->set('entity_reference_override', [
-      'entity_type' => $entity_type,
-      'entity_id' => $entity_id,
-      'field_name' => $field_name,
-      'delta' => $delta,
-    ]);
 
     if ($this->isAjax()) {
-      $form['actions']['submit']['#ajax']['callback'] = '::ajaxSubmit';
     }
 
     return $form;
@@ -142,6 +141,8 @@ class OverrideEntityForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    file_put_contents('foo.txt','submitForm');
+
     if ($this->isAjax()) {
       return;
     }
@@ -203,6 +204,7 @@ class OverrideEntityForm extends FormBase {
   protected function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
 
+    file_put_contents('foo.txt','successfulAjaxSubmit');
     $arguments = $form_state->get('entity_reference_override');
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */

@@ -3,10 +3,13 @@
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
+use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
+use Drupal\entity_reference_override\Form\OverrideEntityForm;
 
 /**
  * Plugin implementation of the 'entity_reference_override_autocomplete' widget.
@@ -47,31 +50,58 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#default_value' => $value,
     ];
 
+    $element['edit'] = [
+      '#type' => 'button',
+      '#name' => 'button1' . $delta,
+      '#value' => sprintf('Override %s in context of this %s',
+        $referencedEntity->getEntityType()->getSingularLabel(),
+        $entity->getEntityType()->getSingularLabel()),
+      '#override_form_state' => [
+        'entity_type' => $entity->getEntityTypeId(),
+        'entity_id' => $entity->id(),
+        'delta' => $delta,
+        'field_name' => $field_name,
+      ],
+      '#ajax' => [
+        'callback' => [static::class, 'openOverrideForm'],
+        'progress' => [
+          'type' => 'throbber',
+          'message' => $this->t('Opening media library.'),
+        ],
+        // The AJAX system automatically moves focus to the first tabbable
+        // element of the modal, so we need to disable refocus on the button.
+        'disable-refocus' => TRUE,
+      ],
+    ];
+
+    $element['edit']['#attached']['library'][] = 'core/drupal.dialog.ajax';
+
+    return $element;
+  }
+
+  public static function openOverrideForm(array $form, FormStateInterface $form_state) {
+
     $dialog_options = [
+      'title' => 'Override',
       'minHeight' => '75%',
       'maxHeight' => '75%',
       'width' => '75%',
     ];
 
-    $element['edit'] = [
-      '#type' => 'link',
-      '#title' => sprintf('Override %s in context of this %s',
-        $referencedEntity->getEntityType()->getSingularLabel(),
-        $entity->getEntityType()->getSingularLabel()),
-      '#url' => Url::fromRoute('entity_reference_override.form', [
-        'entity_type' => $entity->getEntityTypeId(),
-        'entity_id' => $entity->id(),
-        'field_name' => $field_name,
-        'delta' => $delta,
-      ]),
-      '#attributes' => [
-        'class' => ['use-ajax', 'button'],
-        'data-dialog-type' => 'modal',
-        'data-dialog-options' => Json::encode($dialog_options),
-      ],
-    ];
+    $triggering_element = $form_state->getTriggeringElement();
 
-    return $element;
+
+
+    $form_state = new FormState();
+    $form_state->set('entity_reference_override', $triggering_element['#override_form_state']);
+
+    $override_form = \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $form_state);
+
+
+    $response = new AjaxResponse();
+    $response->addCommand(new OpenModalDialogCommand($dialog_options['title'], $override_form, $dialog_options));
+
+    return $response;
   }
 
   /**
@@ -82,6 +112,10 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     foreach ($values as $key => $value) {
       if (!empty($value['overwritten_property_map'])) {
         $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map']);
+      }
+      else {
+        $values[$key]['overwritten_property_map'] = [];
+
       }
     }
     return $values;
