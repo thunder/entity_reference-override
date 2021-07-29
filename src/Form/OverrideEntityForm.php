@@ -13,7 +13,9 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -97,22 +99,24 @@ class OverrideEntityForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
-    $entity_type = $form_state->get('entity_reference_override')['entity_type'];
-    $entity_id = $form_state->get('entity_reference_override')['entity_id'];
-    $field_name = $form_state->get('entity_reference_override')['field_name'];
-    $delta = $form_state->get('entity_reference_override')['delta'];
+    $form['#action'] = Url::fromRoute('entity_reference_override.form', [], [
+      'query' => $form_state->get('entity_reference_override')->all(),
+    ])->toString();
+
+    /** @var \Drupal\entity_reference_override\EntityReferenceOverrideState $state */
+    $state = $form_state->get('entity_reference_override');
 
     /** @var \Drupal\Core\Entity\EntityInterface $entity */
-    $entity = $this->entityTypeManager->getStorage($entity_type)
-      ->load($entity_id);
+    $entity = $this->entityTypeManager->getStorage($state->getEntityType())
+      ->load($state->getEntityId());
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $entity->{$field_name}->get($delta)->entity;
+    $referenced_entity = $entity->{$state->getFieldName()}->get($state->getDelta())->entity;
 
     $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle());
 
     $definitions = $this->entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
-    $options = $definitions[$field_name]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'];
+    $options = $definitions[$state->getFieldName()]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'];
 
     foreach ($form_display->getComponents() as $name => $component) {
       if (!in_array($name, array_filter($options))) {
@@ -127,12 +131,16 @@ class OverrideEntityForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save2'),
       '#button_type' => 'primary',
+      '#ajax' => [
+        'callback' => [OverrideEntityForm::class, 'ajaxSubmit'],
+        'url' => Url::fromRoute('entity_reference_override.form'),
+        'options' => [
+          'query' => $state->all() + [
+              FormBuilderInterface::AJAX_FORM_REQUEST => TRUE,
+            ],
+        ],
+      ],
     ];
-    $form['actions']['submit']['#ajax']['callback'] = [OverrideEntityForm::class, 'ajaxSubmit'];
-
-
-    if ($this->isAjax()) {
-    }
 
     return $form;
   }

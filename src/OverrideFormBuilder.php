@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
+use Drupal\media_library\MediaLibraryState;
 
 class OverrideFormBuilder {
 
@@ -44,11 +45,37 @@ class OverrideFormBuilder {
     $this->entityFieldManager = $entityFieldManager;
   }
 
+
+  /**
+   * Get media library dialog options.
+   *
+   * @return array
+   *   The media library dialog options.
+   */
+  public static function dialogOptions() {
+    return [
+      'dialogClass' => 'media-library-widget-modal',
+      'title' => t('Override'),
+      'minHeight' => '75%',
+      'maxHeight' => '75%',
+      'width' => '75%',
+    ];
+  }
+
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $override_form_state) {
-a
+  public function buildForm(EntityReferenceOverrideState $state = NULL) {
+
+    if (!$state) {
+      $state = EntityReferenceOverrideState::fromRequest(\Drupal::request());
+    }
+
+    $form_state = new FormState();
+    $form_state->set('entity_reference_override', $state);
+
+    return \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $form_state);
+
   }
 
 
