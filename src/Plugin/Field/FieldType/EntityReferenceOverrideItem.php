@@ -64,11 +64,10 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
         $translation = $entity->getTranslation($this->getLangcode());
         $this->overwriteFields($translation, $this->values['overwritten_property_map']);
 
-        $entity->overwritten = TRUE;
+        $entity->overwritten_path = sprintf('%s.%s', $this->getEntity()->getEntityTypeId(), $this->getPropertyPath());
       }
 
       $entity->addCacheableDependency($this->getEntity());
-      $entity->addCacheContexts(['overridden_reference_field:' . $this->getPropertyPath()]);
       return $entity;
     }
     return parent::__get($name);

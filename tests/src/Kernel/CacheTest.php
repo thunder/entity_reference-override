@@ -55,9 +55,9 @@ class CacheTest extends EntityReferenceOverrideTestBase {
   }
 
   /**
-   * Testing that all expected cache contexts exists.
+   * Testing that all expected cache keys exists.
    */
-  public function testCacheContexts() {
+  public function testCacheKeys() {
     $referenced_entity = EntityTestMul::create([
       'name' => 'Referenced entity',
       'field_description' => 'Description',
@@ -79,8 +79,11 @@ class CacheTest extends EntityReferenceOverrideTestBase {
 
     $entity->save();
 
-    $this->assertContains('overridden_reference_field:field_reference_override.0', $entity->field_reference_override->entity->getCacheContexts());
-    $this->assertContains('overridden_reference_field:field_reference_override_2.0', $entity->field_reference_override_2->entity->getCacheContexts());
+    $render = \Drupal::entityTypeManager()->getViewBuilder('entity_test')->view($entity->field_reference_override->entity);
+    $this->assertContains('overridden_reference_field:entity_test.field_reference_override.0', $render['#cache']['keys']);
+
+    $render = \Drupal::entityTypeManager()->getViewBuilder('entity_test')->view($entity->field_reference_override_2->entity);
+    $this->assertNotContains('overridden_reference_field:entity_test.field_reference_override_2.0', $render['#cache']['keys']);
   }
 
   /**
