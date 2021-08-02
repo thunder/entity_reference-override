@@ -98,7 +98,6 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       }
       else {
         $values[$key]['overwritten_property_map'] = [];
-
       }
     }
     return $values;

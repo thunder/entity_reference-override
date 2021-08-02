@@ -17,7 +17,7 @@ use Drupal\Core\TypedData\MapDataDefinition;
  *   label = @Translation("Entity reference override"),
  *   description = @Translation("An entity field containing an entity reference and additional data."),
  *   category = @Translation("Reference"),
- *   default_widget = "entity_reference_autocomplete",
+ *   default_widget = "entity_reference_override_autocomplete",
  *   default_formatter = "entity_reference_label",
  *   list_class = "\Drupal\Core\Field\EntityReferenceFieldItemList"
  * )
@@ -56,16 +56,18 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    * {@inheritdoc}
    */
   public function __get($name) {
-    if ($name == 'entity' && !empty($this->values['overwritten_property_map'])) {
+    if ($name == 'entity' && !empty(parent::__get('entity'))) {
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-      $entity = parent::__get('entity');
+      $entity = clone parent::__get('entity');
+      if (!empty($this->values['overwritten_property_map'])) {
+        $this->overwriteFields($entity, $this->values['overwritten_property_map']);
+        $translation = $entity->getTranslation($this->getLangcode());
+        $this->overwriteFields($translation, $this->values['overwritten_property_map']);
 
-      $this->overwriteFields($entity, $this->values['overwritten_property_map']);
-      $translation = $entity->getTranslation($this->getLangcode());
-      $this->overwriteFields($translation, $this->values['overwritten_property_map']);
+        $entity->entity_reference_override = sprintf('%s.%s', $this->getEntity()->getEntityTypeId(), $this->getPropertyPath());
+        $entity->addCacheableDependency($this->getEntity());
+      }
 
-      $entity->addCacheableDependency($this->getEntity());
-      $entity->overwritten = TRUE;
       return $entity;
     }
     return parent::__get($name);
@@ -152,10 +154,11 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
         }
       }
 
+      $overridable_properties = $this->getSetting('overwritable_properties');
       $form['overwritable_properties'][$bundle_id]['options'] = [
         '#type' => 'checkboxes',
         '#options' => $options,
-        '#default_value' => $this->getSetting('overwritable_properties')[$bundle_id]['options'],
+        '#default_value' => $overridable_properties ? $overridable_properties[$bundle_id]['options'] : [],
       ];
 
     }
