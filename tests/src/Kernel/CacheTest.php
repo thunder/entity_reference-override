@@ -80,10 +80,10 @@ class CacheTest extends EntityReferenceOverrideTestBase {
     $entity->save();
 
     $render = \Drupal::entityTypeManager()->getViewBuilder('entity_test')->view($entity->field_reference_override->entity);
-    $this->assertContains('overridden_reference_field:entity_test.field_reference_override.0', $render['#cache']['keys']);
+    $this->assertContains('entity_reference_override:entity_test.field_reference_override.0', $render['#cache']['keys']);
 
     $render = \Drupal::entityTypeManager()->getViewBuilder('entity_test')->view($entity->field_reference_override_2->entity);
-    $this->assertNotContains('overridden_reference_field:entity_test.field_reference_override_2.0', $render['#cache']['keys']);
+    $this->assertNotContains('entity_reference_override:entity_test.field_reference_override_2.0', $render['#cache']['keys']);
   }
 
   /**
