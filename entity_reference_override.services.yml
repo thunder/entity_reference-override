@@ -1,5 +1,0 @@
-services:
-  cache_context.overridden_reference_field:
-    class: Drupal\entity_reference_override\Cache\Context\OverriddenReferenceFieldCacheContext
-    tags:
-      - { name: cache.context }
