@@ -1,7 +1,6 @@
 entity_reference_override.form:
   path: '/entity_reference_override'
   defaults:
-    _form: 'Drupal\entity_reference_override\Form\OverrideEntityForm'
-    _title: 'Override files in context.'
+    _controller: 'entity_reference_override.form_builder:buildForm'
   requirements:
     _custom_access: '\Drupal\entity_reference_override\Form\OverrideEntityForm::access'

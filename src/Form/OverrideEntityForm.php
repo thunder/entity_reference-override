@@ -99,10 +99,6 @@ class OverrideEntityForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
-    $form['#action'] = Url::fromRoute('entity_reference_override.form', [], [
-      'query' => $form_state->get('entity_reference_override')->all(),
-    ])->toString();
-
     /** @var \Drupal\entity_reference_override\EntityReferenceOverrideState $state */
     $state = $form_state->get('entity_reference_override');
 
@@ -132,12 +128,12 @@ class OverrideEntityForm extends FormBase {
       '#value' => $this->t('Save2'),
       '#button_type' => 'primary',
       '#ajax' => [
-        'callback' => [OverrideEntityForm::class, 'ajaxSubmit'],
+        'callback' => '::ajaxSubmit',
         'url' => Url::fromRoute('entity_reference_override.form'),
         'options' => [
           'query' => $state->all() + [
-              FormBuilderInterface::AJAX_FORM_REQUEST => TRUE,
-            ],
+            FormBuilderInterface::AJAX_FORM_REQUEST => TRUE,
+          ],
         ],
       ],
     ];
@@ -178,14 +174,15 @@ class OverrideEntityForm extends FormBase {
    *   The overridden values as JSON.
    */
   protected function getOverwrittenValues(FormStateInterface $form_state, EntityInterface $entity) {
-    $arguments = $form_state->get('entity_reference_override');
+    /** @var \Drupal\entity_reference_override\EntityReferenceOverrideState $state */
+    $state = $form_state->get('entity_reference_override');
 
     /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
-    $referenced_entity = $entity->{$arguments['field_name']}->get($arguments['delta'])->entity;
+    $referenced_entity = $entity->{$state->getFieldName()}->get($state->getDelta())->entity;
 
     $definitions = $this->entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
 
-    $options = $definitions[$arguments['field_name']]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'];
+    $options = $definitions[$state->getFieldName()]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'];
 
     $values = [];
     foreach ($options as $name => $enabled) {
@@ -212,16 +209,16 @@ class OverrideEntityForm extends FormBase {
   protected function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
 
-    file_put_contents('foo.txt','successfulAjaxSubmit');
-    $arguments = $form_state->get('entity_reference_override');
+    /** @var \Drupal\entity_reference_override\EntityReferenceOverrideState $state */
+    $state = $form_state->get('entity_reference_override');
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
-    $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
-      ->load($arguments['entity_id']);
+    $entity = $this->entityTypeManager->getStorage($state->getEntityType())
+      ->load($state->getEntityId());
 
     $values = $this->getOverwrittenValues($form_state, $entity);
 
-    $selector = "[name=\"{$arguments['field_name']}[{$arguments['delta']}][overwritten_property_map]\"]";
+    $selector = "[name=\"{$state->getFieldName()}[{$state->getDelta()}][overwritten_property_map]\"]";
 
     $response
       ->addCommand(new InvokeCommand($selector, 'val', [$values]))

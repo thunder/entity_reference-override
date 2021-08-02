@@ -45,7 +45,6 @@ class OverrideFormBuilder {
     $this->entityFieldManager = $entityFieldManager;
   }
 
-
   /**
    * Get media library dialog options.
    *
@@ -75,11 +74,6 @@ class OverrideFormBuilder {
     $form_state->set('entity_reference_override', $state);
 
     return \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $form_state);
-
   }
-
-
-
-
 
 }

@@ -57,7 +57,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $state = EntityReferenceOverrideState::create($entity->id(), $entity->getEntityTypeId(), $field_name, $delta);
     $element['edit'] = [
       '#type' => 'button',
-      '#name' => 'button1' . $delta,
+      '#name' => 'entity_reference_override-' . $field_name . '-' . $delta,
       '#value' => sprintf('Override %s in context of this %s',
         $referencedEntity->getEntityType()->getSingularLabel(),
         $entity->getEntityType()->getSingularLabel()),

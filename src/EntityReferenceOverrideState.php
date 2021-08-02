@@ -15,6 +15,18 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class EntityReferenceOverrideState extends ParameterBag {
 
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $parameters = []) {
+   # $this->validateRequiredParameters($parameters['media_library_opener_id'], $parameters['media_library_allowed_types'], $parameters['media_library_selected_type'], $parameters['media_library_remaining']);
+    #$parameters += [
+    #  'media_library_opener_parameters' => [],
+    #];
+    parent::__construct($parameters);
+    $this->set('hash', $this->getHash());
+  }
+
 
   public static function create($entity_id, $entity_type, $field_name, $delta) {
     $state = new static([
@@ -62,7 +74,6 @@ class EntityReferenceOverrideState extends ParameterBag {
     $state->replace($query->all());
     return $state;
   }
-
 
   /**
    * Get the hash for the state object.
