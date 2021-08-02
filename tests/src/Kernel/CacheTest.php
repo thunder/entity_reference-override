@@ -64,26 +64,45 @@ class CacheTest extends EntityReferenceOverrideTestBase {
     ]);
     $referenced_entity->save();
 
+    $view_builder = \Drupal::entityTypeManager()->getViewBuilder('entity_test');
+
     $entity = EntityTest::create([
       'name' => 'Test entity',
       'field_reference_override' => [
         'target_id' => $referenced_entity->id(),
-        'overwritten_property_map' => [
-          'field_description' => 'Overridden description',
-        ],
       ],
       'field_reference_override_2' => [
-        'target_id' => $referenced_entity->id(),
+        [
+          'target_id' => $referenced_entity->id(),
+        ],
+        [
+          'target_id' => $referenced_entity->id(),
+        ],
       ],
     ]);
-
     $entity->save();
 
-    $render = \Drupal::entityTypeManager()->getViewBuilder('entity_test')->view($entity->field_reference_override->entity);
+    $render = $view_builder->view($entity->field_reference_override->entity);
+    $this->assertNotContains('entity_reference_override:', $render['#cache']['keys']);
+
+    $render = $view_builder->view($entity->field_reference_override_2->entity);
+    $this->assertNotContains('entity_reference_override:', $render['#cache']['keys']);
+
+    $entity->field_reference_override->overwritten_property_map = [
+      'field_description' => 'Overridden description',
+    ];
+    $entity->field_reference_override_2->get(1)->overwritten_property_map = [
+      'field_description' => 'Overridden second description',
+    ];
+    $entity->save();
+
+    $render = $view_builder->view($entity->field_reference_override->entity);
     $this->assertContains('entity_reference_override:entity_test.field_reference_override.0', $render['#cache']['keys']);
 
-    $render = \Drupal::entityTypeManager()->getViewBuilder('entity_test')->view($entity->field_reference_override_2->entity);
+    $render = $view_builder->view($entity->field_reference_override_2->entity);
     $this->assertNotContains('entity_reference_override:entity_test.field_reference_override_2.0', $render['#cache']['keys']);
+    $render = $view_builder->view($entity->field_reference_override_2->get(1)->entity);
+    $this->assertContains('entity_reference_override:entity_test.field_reference_override_2.1', $render['#cache']['keys']);
   }
 
   /**
