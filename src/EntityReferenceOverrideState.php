@@ -1,18 +1,19 @@
 <?php
-/**
- * @file
- * Contains
- */
 
 namespace Drupal\entity_reference_override;
 
-
+use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Site\Settings;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
+/**
+ * Class EntityReferenceOverrideState
+ *
+ * @package Drupal\entity_reference_override
+ */
 class EntityReferenceOverrideState extends ParameterBag {
 
   /**
@@ -27,13 +28,13 @@ class EntityReferenceOverrideState extends ParameterBag {
     $this->set('hash', $this->getHash());
   }
 
-
-  public static function create($entity_id, $entity_type, $field_name, $delta) {
+  public static function create($entity_id, $entity_type, $field_name, $delta, array $overwritten_property_map) {
     $state = new static([
       'entity_reference_override_entity_id' => $entity_id,
       'entity_reference_override_entity_type' => $entity_type,
       'entity_reference_override_field_name' => $field_name,
       'entity_reference_override_delta' => $delta,
+      'entity_reference_override_overwritten_property_map' => Json::encode($overwritten_property_map),
     ]);
     return $state;
   }
@@ -53,13 +54,14 @@ class EntityReferenceOverrideState extends ParameterBag {
   public static function fromRequest(Request $request) {
     $query = $request->query;
 
-    // Create a EntityReferenceOverrideState object through the create method to make sure
-    // all validation runs.
+    // Create a EntityReferenceOverrideState object through the create method
+    // to make sure all validation runs.
     $state = static::create(
       $query->get('entity_reference_override_entity_id'),
       $query->get('entity_reference_override_entity_type'),
       $query->get('entity_reference_override_field_name'),
-      $query->get('entity_reference_override_delta')
+      $query->get('entity_reference_override_delta'),
+      Json::decode($query->get('entity_reference_override_overwritten_property_map'))
     );
 
     // The request parameters need to contain a valid hash to prevent a
@@ -92,6 +94,7 @@ class EntityReferenceOverrideState extends ParameterBag {
       $this->getEntityType(),
       $this->getFieldName(),
       $this->getDelta(),
+      $this->getOverwrittenPropertyMap(),
     ]);
 
     return Crypt::hmacBase64($hash, \Drupal::service('private_key')->get() . Settings::getHashSalt());
@@ -128,4 +131,9 @@ class EntityReferenceOverrideState extends ParameterBag {
   public function getDelta() {
     return $this->get('entity_reference_override_delta');
   }
+
+  public function getOverwrittenPropertyMap() {
+    return $this->get('entity_reference_override_overwritten_property_map');
+  }
+
 }

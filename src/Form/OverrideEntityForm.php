@@ -16,6 +16,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\entity_reference_override\EntityReferenceOverrideTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -24,6 +25,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class OverrideEntityForm extends FormBase {
 
   use AjaxFormHelperTrait;
+  use EntityReferenceOverrideTrait;
 
   /**
    * The entity display repository service.
@@ -120,12 +122,14 @@ class OverrideEntityForm extends FormBase {
       }
     }
 
+    file_put_contents('foo.txt', print_r($state->getOverwrittenPropertyMap(), 1) . PHP_EOL, FILE_APPEND);
+    $this->overwriteFields($referenced_entity, Json::decode($state->getOverwrittenPropertyMap()));
     $form_display->buildForm($referenced_entity, $form, $form_state);
 
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Save2'),
+      '#value' => $this->t('Save'),
       '#button_type' => 'primary',
       '#ajax' => [
         'callback' => '::ajaxSubmit',
@@ -144,23 +148,7 @@ class OverrideEntityForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    file_put_contents('foo.txt','submitForm');
-
-    if ($this->isAjax()) {
-      return;
-    }
-
-    $arguments = $form_state->get('entity_reference_override');
-
-    /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
-    $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
-      ->load($arguments['entity_id']);
-
-    $entity->{$arguments['field_name']}->get($arguments['delta'])->overwritten_property_map = $this->getOverwrittenValues($form_state, $entity);
-    $entity->save();
-
-  }
+  public function submitForm(array &$form, FormStateInterface $form_state) {}
 
   /**
    * Get overwritten values for an entity.
@@ -222,6 +210,7 @@ class OverrideEntityForm extends FormBase {
 
     $response
       ->addCommand(new InvokeCommand($selector, 'val', [$values]))
+      ->addCommand(new InvokeCommand('[data-drupal-selector="edit-field-media-0-update-widget"]', 'trigger', ['mousedown']))
       ->addCommand(new CloseDialogCommand());
 
     return $response;

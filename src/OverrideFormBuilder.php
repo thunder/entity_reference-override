@@ -2,15 +2,16 @@
 
 namespace Drupal\entity_reference_override;
 
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
-use Drupal\media_library\MediaLibraryState;
 
+/**
+ * Builds the override form.
+ */
 class OverrideFormBuilder {
 
   use StringTranslationTrait;
@@ -65,14 +66,12 @@ class OverrideFormBuilder {
    * {@inheritdoc}
    */
   public function buildForm(EntityReferenceOverrideState $state = NULL) {
-
     if (!$state) {
       $state = EntityReferenceOverrideState::fromRequest(\Drupal::request());
     }
 
     $form_state = new FormState();
     $form_state->set('entity_reference_override', $state);
-
     return \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $form_state);
   }
 
