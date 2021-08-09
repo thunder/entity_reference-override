@@ -122,7 +122,6 @@ class OverrideEntityForm extends FormBase {
       }
     }
 
-    file_put_contents('foo.txt', print_r($state->getOverwrittenPropertyMap(), 1) . PHP_EOL, FILE_APPEND);
     $this->overwriteFields($referenced_entity, Json::decode($state->getOverwrittenPropertyMap()));
     $form_display->buildForm($referenced_entity, $form, $form_state);
 
@@ -210,7 +209,7 @@ class OverrideEntityForm extends FormBase {
 
     $response
       ->addCommand(new InvokeCommand($selector, 'val', [$values]))
-      ->addCommand(new InvokeCommand('[data-drupal-selector="edit-field-media-0-update-widget"]', 'trigger', ['mousedown']))
+     # ->addCommand(new InvokeCommand('[data-drupal-selector="edit-field-media-0-update-widget"]', 'trigger', ['mousedown']))
       ->addCommand(new CloseDialogCommand());
 
     return $response;
