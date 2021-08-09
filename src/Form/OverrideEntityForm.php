@@ -209,7 +209,6 @@ class OverrideEntityForm extends FormBase {
 
     $response
       ->addCommand(new InvokeCommand($selector, 'val', [$values]))
-     # ->addCommand(new InvokeCommand('[data-drupal-selector="edit-field-media-0-update-widget"]', 'trigger', ['mousedown']))
       ->addCommand(new CloseDialogCommand());
 
     return $response;

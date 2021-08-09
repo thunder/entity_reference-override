@@ -1,15 +1,13 @@
 <?php
-/**
- * @file
- * Contains
- */
 
 namespace Drupal\entity_reference_override;
-
 
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\EntityInterface;
 
+/**
+ * Trait EntityReferenceOverrideTrait.
+ */
 trait EntityReferenceOverrideTrait {
 
   /**
