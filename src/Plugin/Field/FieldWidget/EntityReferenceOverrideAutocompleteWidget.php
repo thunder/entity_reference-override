@@ -9,8 +9,9 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
+use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\entity_reference_override\OverrideFormBuilder;
+use Drupal\entity_reference_override\Form\OverrideEntityForm;
 
 /**
  * Plugin implementation of the 'entity_reference_override_autocomplete' widget.
@@ -131,8 +132,19 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
     $triggering_element = $form_state->getTriggeringElement();
-    $override_form = \Drupal::service('entity_reference_override.form_builder')->buildForm($triggering_element['#entity_reference_override_entity']);
-    $dialog_options = OverrideFormBuilder::dialogOptions();
+
+    $form_state = new FormState();
+    $form_state->set('entity_reference_override_entity', $triggering_element['#entity_reference_override_entity']);
+    $override_form = \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $form_state);
+
+    $dialog_options = [
+      'dialogClass' => 'media-library-widget-modal',
+      'title' => t('Override'),
+      'minHeight' => '75%',
+      'maxHeight' => '75%',
+      'width' => '75%',
+    ];
+
     return (new AjaxResponse())
       ->addCommand(new OpenModalDialogCommand($dialog_options['title'], $override_form, $dialog_options));
   }

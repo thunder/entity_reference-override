@@ -121,6 +121,10 @@ class OverrideEntityForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $form_state->get('entity_reference_override_entity');
+    if (!$referenced_entity) {
+      $referenced_entity = $this->tempStore->get($this->getRequest()->query->get('hash'));
+      $form_state->set('entity_reference_override_entity', $referenced_entity);
+    }
 
     $token = Crypt::hmacBase64($referenced_entity->entity_reference_override, Settings::getHashSalt() . $this->privateKey->get());
     $this->tempStore->set($token, $referenced_entity);
@@ -175,25 +179,6 @@ class OverrideEntityForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {}
 
   /**
-   * Get overwritten values for an entity.
-   *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state object.
-   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
-   *   The referenced entity.
-   *
-   * @return string
-   *   The overridden values as JSON.
-   */
-  protected function getOverwrittenValues(FormStateInterface $form_state, EntityInterface $referenced_entity) {
-    $values = [];
-    foreach ($this->getOverwritableProperties($referenced_entity) as $name) {
-      $values = [$name => $form_state->getValue($name)];
-    }
-    return Json::encode($values);
-  }
-
-  /**
    * Get overwritable properties for an entity.
    *
    * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
@@ -205,7 +190,7 @@ class OverrideEntityForm extends FormBase {
   protected function getOverwritableProperties(EntityInterface $referenced_entity) {
     [$entity_type_id, $bundle, $field_name] = $this->getReferencingEntity($referenced_entity);
     $definitions = $this->entityFieldManager->getFieldDefinitions($entity_type_id, $bundle);
-    return array_filter($definitions[$field_name]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options']);
+    return array_filter($definitions[$field_name]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'] ?? []);
   }
 
   /**
@@ -229,12 +214,15 @@ class OverrideEntityForm extends FormBase {
 
     [, , $field_name, $delta] = $this->getReferencingEntity($referenced_entity);
 
-    $values = $this->getOverwrittenValues($form_state, $referenced_entity);
+    $values = [];
+    foreach ($this->getOverwritableProperties($referenced_entity) as $name) {
+      $values = [$name => $form_state->getValue($name)];
+    }
 
     $selector = "[name=\"{$field_name}[{$delta}][overwritten_property_map]\"]";
 
     $response
-      ->addCommand(new InvokeCommand($selector, 'val', [$values]))
+      ->addCommand(new InvokeCommand($selector, 'val', [Json::encode($values)]))
       ->addCommand(new CloseDialogCommand());
 
     return $response;

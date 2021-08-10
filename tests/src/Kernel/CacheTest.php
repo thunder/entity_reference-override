@@ -97,12 +97,12 @@ class CacheTest extends EntityReferenceOverrideTestBase {
     $entity->save();
 
     $render = $view_builder->view($entity->field_reference_override->entity);
-    $this->assertContains('entity_reference_override:entity_test.field_reference_override.0', $render['#cache']['keys']);
+    $this->assertContains('entity_reference_override:entity_test:entity_test.field_reference_override.0', $render['#cache']['keys']);
 
     $render = $view_builder->view($entity->field_reference_override_2->entity);
     $this->assertNotContains('entity_reference_override:', $render['#cache']['keys']);
     $render = $view_builder->view($entity->field_reference_override_2->get(1)->entity);
-    $this->assertContains('entity_reference_override:entity_test.field_reference_override_2.1', $render['#cache']['keys']);
+    $this->assertContains('entity_reference_override:entity_test:entity_test.field_reference_override_2.1', $render['#cache']['keys']);
   }
 
   /**

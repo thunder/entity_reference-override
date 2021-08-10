@@ -9,3 +9,17 @@ field.field_settings.entity_reference_override:
     overwritable_properties:
       type: sequence
       label: 'Properties to overwrite'
+      sequence:
+        type: mapping
+        label: 'Bundle'
+        mapping:
+          options:
+            type: sequence
+            label: 'Properties to overwrite'
+            sequence:
+              type: string
+              label: 'Field'
+
+field.widget.settings.entity_reference_override_autocomplete:
+  type: field.widget.settings.entity_reference_autocomplete
+  label: 'Entity reference autocomplete display format settings'

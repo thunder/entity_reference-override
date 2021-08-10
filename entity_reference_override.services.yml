@@ -1,4 +1,0 @@
-services:
-  entity_reference_override.form_builder:
-    class: Drupal\entity_reference_override\OverrideFormBuilder
-    arguments: ['@form_builder', '@tempstore.private', '@request_stack']
