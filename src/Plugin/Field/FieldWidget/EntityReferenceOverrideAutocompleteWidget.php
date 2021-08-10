@@ -3,7 +3,6 @@
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
@@ -99,22 +98,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       return;
     }
 
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
-    $field_element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -1));
-    $delta = end($field_element['#parents']);
-
-    // We need to use the actual user input, since when #limit_validation_errors
-    // is used, the unvalidated user input is not added to the form state.
-    // @see FormValidator::handleErrorsWithLimitedValidation()
-    $overwritten_property_map = NestedArray::getValue($form_state->getUserInput(), array_merge_recursive($field_element['#parents'], ['overwritten_property_map']));
-
-    $form_values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
-    $form_values[$delta]['overwritten_property_map'] = Json::decode($overwritten_property_map);
-    unset($form_values['add_more']);
-
     $field_state = static::getWidgetState([], $this->fieldDefinition->getName(), $form_state);
 
-    $field_state['items'] = $form_values;
+    $field_state['items'] = $items->getValue();
 
     static::setWidgetState([], $this->fieldDefinition->getName(), $form_state, $field_state);
   }
@@ -133,20 +119,29 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
     $triggering_element = $form_state->getTriggeringElement();
 
-    $form_state = new FormState();
-    $form_state->set('entity_reference_override_entity', $triggering_element['#entity_reference_override_entity']);
-    $override_form = \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $form_state);
+    $override_form_state = new FormState();
+    $override_form_state->set('entity_reference_override_entity', $triggering_element['#entity_reference_override_entity']);
+    $override_form = \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $override_form_state);
 
-    $dialog_options = [
-      'dialogClass' => 'media-library-widget-modal',
+    $dialog_options = static::overrideFormDialogOptions();
+
+    return (new AjaxResponse())
+      ->addCommand(new OpenModalDialogCommand($dialog_options['title'], $override_form, $dialog_options));
+  }
+
+  /**
+   * Override form dialog options.
+   *
+   * @return array
+   *   Options for the dialog.
+   */
+  protected static function overrideFormDialogOptions() {
+    return [
       'title' => t('Override'),
       'minHeight' => '75%',
       'maxHeight' => '75%',
       'width' => '75%',
     ];
-
-    return (new AjaxResponse())
-      ->addCommand(new OpenModalDialogCommand($dialog_options['title'], $override_form, $dialog_options));
   }
 
   /**
