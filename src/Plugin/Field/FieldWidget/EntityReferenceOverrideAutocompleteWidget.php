@@ -10,7 +10,6 @@ use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\entity_reference_override\EntityReferenceOverrideState;
 use Drupal\entity_reference_override\OverrideFormBuilder;
 
 /**
@@ -61,14 +60,13 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
     ];
 
-    $state = EntityReferenceOverrideState::create($entity->id(), $entity->getEntityTypeId(), $field_name, $delta, $items->get($delta)->overwritten_property_map);
     $element['edit'] = [
       '#type' => 'button',
       '#name' => 'entity_reference_override-' . $field_name . '-' . $delta,
       '#value' => sprintf('Override %s in context of this %s',
         $referencedEntity->getEntityType()->getSingularLabel(),
         $entity->getEntityType()->getSingularLabel()),
-      '#entity_reference_override_state' => $state,
+      '#entity_reference_override_entity' => $items->get($delta)->entity,
       '#ajax' => [
         'callback' => [static::class, 'openOverrideForm'],
         'progress' => [
@@ -96,7 +94,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     parent::extractFormValues($items, $form, $form_state);
 
     $button = $form_state->getTriggeringElement();
-    if (!isset($button['#entity_reference_override_state'])) {
+    if (!isset($button['#entity_reference_override_entity'])) {
       return;
     }
 
@@ -133,7 +131,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
     $triggering_element = $form_state->getTriggeringElement();
-    $override_form = \Drupal::service('entity_reference_override.form_builder')->buildForm($triggering_element['#entity_reference_override_state']);
+    $override_form = \Drupal::service('entity_reference_override.form_builder')->buildForm($triggering_element['#entity_reference_override_entity']);
     $dialog_options = OverrideFormBuilder::dialogOptions();
     return (new AjaxResponse())
       ->addCommand(new OpenModalDialogCommand($dialog_options['title'], $override_form, $dialog_options));

@@ -1,4 +1,4 @@
 services:
   entity_reference_override.form_builder:
     class: Drupal\entity_reference_override\OverrideFormBuilder
-    arguments: [ '@entity_type.manager', '@entity_display.repository', '@entity_field.manager' ]
+    arguments: ['@form_builder', '@tempstore.private', '@request_stack']

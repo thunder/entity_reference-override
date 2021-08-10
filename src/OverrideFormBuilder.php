@@ -2,11 +2,12 @@
 
 namespace Drupal\entity_reference_override;
 
-use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
-use Drupal\Core\Entity\EntityFieldManagerInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormState;
+use Drupal\Core\Http\RequestStack;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
 
 /**
@@ -17,33 +18,33 @@ class OverrideFormBuilder {
   use StringTranslationTrait;
 
   /**
-   * The entity display repository service.
+   * The form builder service.
    *
-   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   * @var \Drupal\Core\Form\FormBuilderInterface
    */
-  protected $entityDisplayRepository;
+  protected $formBuilder;
 
   /**
-   * The entity field manager service.
+   * The temp store service.
    *
-   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   * @var \Drupal\Core\TempStore\PrivateTempStore
    */
-  protected $entityFieldManager;
+  protected $tempStore;
 
   /**
-   * The entity type manager service.
+   * The current request.
    *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   * @var \Symfony\Component\HttpFoundation\Request
    */
-  protected $entityTypeManager;
+  protected $request;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityDisplayRepositoryInterface $entityDisplayRepository, EntityFieldManagerInterface $entityFieldManager) {
-    $this->entityTypeManager = $entityTypeManager;
-    $this->entityDisplayRepository = $entityDisplayRepository;
-    $this->entityFieldManager = $entityFieldManager;
+  public function __construct(FormBuilderInterface $formBuilder, PrivateTempStoreFactory $privateTempStoreFactory, RequestStack $requestStack) {
+    $this->formBuilder = $formBuilder;
+    $this->tempStore = $privateTempStoreFactory->get('entity_reference_override');
+    $this->request = $requestStack->getCurrentRequest();
   }
 
   /**
@@ -65,14 +66,14 @@ class OverrideFormBuilder {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(EntityReferenceOverrideState $state = NULL) {
-    if (!$state) {
-      $state = EntityReferenceOverrideState::fromRequest(\Drupal::request());
+  public function buildForm(EntityInterface $entity = NULL) {
+    if (!$entity) {
+      $entity = $this->tempStore->get($this->request->query->get('hash'));
     }
 
     $form_state = new FormState();
-    $form_state->set('entity_reference_override', $state);
-    return \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $form_state);
+    $form_state->set('entity_reference_override_entity', $entity);
+    return $this->formBuilder->buildForm(OverrideEntityForm::class, $form_state);
   }
 
 }
