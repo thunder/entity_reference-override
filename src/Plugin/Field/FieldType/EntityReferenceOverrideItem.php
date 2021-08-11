@@ -6,7 +6,6 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TypedData\MapDataDefinition;
 
 /**
@@ -115,58 +114,6 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    */
   public static function getPreconfiguredOptions() {
     return [];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function defaultFieldSettings() {
-    return [
-      'overwritable_properties' => [],
-    ] + parent::defaultFieldSettings();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function fieldSettingsForm(array $form, FormStateInterface $form_state) {
-    $form = parent::fieldSettingsForm($form, $form_state);
-
-    $form['overwritable_properties'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Overwritable properties'),
-      '#open' => TRUE,
-      '#tree' => TRUE,
-    ];
-
-    /** @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entityTypeBundleInfo */
-    $entityTypeBundleInfo = \Drupal::service('entity_type.bundle.info');
-
-    /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
-    $entityFieldManager = \Drupal::service('entity_field.manager');
-    $target_type = $this->getSetting('target_type');
-    foreach ($entityTypeBundleInfo->getBundleInfo($target_type) as $bundle_id => $bundle) {
-      $form['overwritable_properties'][$bundle_id] = [
-        '#type' => 'details',
-        '#title' => $bundle_id,
-      ];
-
-      $options = [];
-      foreach ($entityFieldManager->getFieldDefinitions($target_type, $bundle_id) as $field_name => $definition) {
-        if ($definition->isDisplayConfigurable('form')) {
-          $options[$field_name] = $definition->getLabel();
-        }
-      }
-
-      $overridable_properties = $this->getSetting('overwritable_properties');
-      $form['overwritable_properties'][$bundle_id]['options'] = [
-        '#type' => 'checkboxes',
-        '#options' => $options,
-        '#default_value' => $overridable_properties ? $overridable_properties[$bundle_id]['options'] : [],
-      ];
-
-    }
-    return $form;
   }
 
 }

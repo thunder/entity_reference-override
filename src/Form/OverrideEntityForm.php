@@ -10,7 +10,6 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
-use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
@@ -36,13 +35,6 @@ class OverrideEntityForm extends FormBase {
   protected $entityDisplayRepository;
 
   /**
-   * The entity field manager service.
-   *
-   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
-   */
-  protected $entityFieldManager;
-
-  /**
    * The private temp store service.
    *
    * @var \Drupal\Core\TempStore\PrivateTempStore
@@ -62,7 +54,6 @@ class OverrideEntityForm extends FormBase {
   public static function create(ContainerInterface $container) {
     $form = parent::create($container);
     $form->setEntityDisplayRepository($container->get('entity_display.repository'));
-    $form->setEntityFieldManager($container->get('entity_field.manager'));
     $form->setPrivateTempStore($container->get('tempstore.private'));
     $form->setPrivateKey($container->get('private_key'));
     return $form;
@@ -76,16 +67,6 @@ class OverrideEntityForm extends FormBase {
    */
   protected function setEntityDisplayRepository(EntityDisplayRepositoryInterface $entityDisplayRepository) {
     $this->entityDisplayRepository = $entityDisplayRepository;
-  }
-
-  /**
-   * Set the entity field manager service.
-   *
-   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
-   *   The entity field manager service.
-   */
-  protected function setEntityFieldManager(EntityFieldManagerInterface $entityFieldManager) {
-    $this->entityFieldManager = $entityFieldManager;
   }
 
   /**
@@ -131,13 +112,7 @@ class OverrideEntityForm extends FormBase {
       $this->tempStore->set($token, $referenced_entity);
     }
 
-    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle());
-    foreach ($form_display->getComponents() as $name => $component) {
-      if (!in_array($name, $this->getOverwritableProperties($referenced_entity))) {
-        $form_display->removeComponent($name);
-      }
-    }
-
+    $form_display = $this->getFormDisplay($referenced_entity);
     $form_display->buildForm($referenced_entity, $form, $form_state);
 
     $form['actions'] = ['#type' => 'actions'];
@@ -161,6 +136,24 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
+   * Get overwrite form display for the referenced entity.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
+   *   The referenced entity.
+   *
+   * @return \Drupal\Core\Entity\Display\EntityFormDisplayInterface
+   *   The overwrite form display.
+   */
+  protected function getFormDisplay(EntityInterface $referenced_entity) {
+    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), 'overwrite');
+    $ignored_components = ['langcode', 'revision_log_message'];
+    foreach ($ignored_components as $component) {
+      $form_display->removeComponent($component);
+    }
+    return $form_display;
+  }
+
+  /**
    * Get referencing entity properties.
    *
    * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
@@ -179,21 +172,6 @@ class OverrideEntityForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {}
-
-  /**
-   * Get overwritable properties for an entity.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
-   *   The referencing entity.
-   *
-   * @return array
-   *   Properties to override.
-   */
-  protected function getOverwritableProperties(EntityInterface $referenced_entity) {
-    [$entity_type_id, $bundle, $field_name] = $this->getReferencingEntityProperties($referenced_entity);
-    $definitions = $this->entityFieldManager->getFieldDefinitions($entity_type_id, $bundle);
-    return array_filter($definitions[$field_name]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'] ?? []);
-  }
 
   /**
    * The access function.
@@ -217,7 +195,7 @@ class OverrideEntityForm extends FormBase {
     [, , $field_name, $delta] = $this->getReferencingEntityProperties($referenced_entity);
 
     $values = [];
-    foreach ($this->getOverwritableProperties($referenced_entity) as $name) {
+    foreach ($this->getFormDisplay($referenced_entity)->getComponents() as $name => $component) {
       $values[$name] = $form_state->getValue($name);
     }
 

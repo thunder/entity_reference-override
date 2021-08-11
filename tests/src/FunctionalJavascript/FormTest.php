@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\entity_reference_override\FunctionalJavascript;
 
+use Drupal\Core\Entity\Entity\EntityFormMode;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\field\Entity\FieldConfig;
@@ -97,7 +98,13 @@ class FormTest extends WebDriverTestBase {
       ->setComponent($field_name)
       ->save();
 
-    $display_repository->getFormDisplay($entity_type, $entity_type)
+    EntityFormMode::create([
+      'id' => $entity_type . '.overwrite',
+      'label' => 'Overwrite',
+      'targetEntityType' => $entity_type,
+    ])->save();
+
+    $display_repository->getFormDisplay($entity_type, $entity_type, 'overwrite')
       ->setComponent($field_name)
       ->save();
   }
