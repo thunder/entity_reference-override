@@ -112,7 +112,16 @@ class OverrideEntityForm extends FormBase {
       $this->tempStore->set($token, $referenced_entity);
     }
 
+    $form['status_messages'] = [
+      '#type' => 'status_messages',
+      '#weight' => -1000,
+    ];
+
     $form_display = $this->getFormDisplay($referenced_entity);
+    if ($form_display->isNew()) {
+      $this->messenger()->addWarning($this->t('Form display mode %form_mode does not exists.', ['%form_mode' => $form_display->id()]));
+      return $form;
+    }
     $form_display->buildForm($referenced_entity, $form, $form_state);
 
     $form['actions'] = ['#type' => 'actions'];
@@ -124,7 +133,7 @@ class OverrideEntityForm extends FormBase {
         'callback' => '::ajaxSubmit',
         'url' => Url::fromRoute('entity_reference_override.form'),
         'options' => [
-          'query' => [
+          'query' => $this->getRequest()->query->all() + [
             'hash' => $token,
             FormBuilderInterface::AJAX_FORM_REQUEST => TRUE,
           ],
@@ -145,7 +154,7 @@ class OverrideEntityForm extends FormBase {
    *   The overwrite form display.
    */
   protected function getFormDisplay(EntityInterface $referenced_entity) {
-    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), 'overwrite');
+    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), $this->getRequest()->query->get('form_mode'));
     $ignored_components = ['langcode', 'revision_log_message'];
     foreach ($ignored_components as $component) {
       $form_display->removeComponent($component);

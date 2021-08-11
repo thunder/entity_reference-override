@@ -6,11 +6,13 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Plugin implementation of the 'entity_reference_override_autocomplete' widget.
@@ -25,6 +27,57 @@ use Drupal\entity_reference_override\Form\OverrideEntityForm;
  * )
  */
 class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompleteWidget {
+
+  /**
+   * The entity display repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   */
+  protected $entityDisplayRepository;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    $widget = parent::create($container, $configuration, $plugin_id, $plugin_definition);
+    $widget->setEntityDisplayRepository($container->get('entity_display.repository'));
+    return $widget;
+  }
+
+  /**
+   * Set entity display repository service.
+   *
+   * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entityDisplayRepository
+   *   The entity display repository service.
+   */
+  protected function setEntityDisplayRepository(EntityDisplayRepositoryInterface $entityDisplayRepository) {
+    $this->entityDisplayRepository = $entityDisplayRepository;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function defaultSettings() {
+    return [
+      'form_mode' => '',
+    ] + parent::defaultSettings();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function settingsForm(array $form, FormStateInterface $form_state) {
+    $element = parent::settingsForm($form, $form_state);
+
+    $element['form_mode'] = [
+      '#type' => 'select',
+      '#title' => t('Form mode'),
+      '#default_value' => $this->getSetting('form_mode'),
+      '#description' => $this->t('The override form mode for referenced entities.'),
+      '#options' => $this->entityDisplayRepository->getFormModeOptions($this->fieldDefinition->getSetting('target_type')),
+    ];
+    return $element;
+  }
 
   /**
    * {@inheritdoc}
@@ -76,6 +129,11 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
         // The AJAX system automatically moves focus to the first tabbable
         // element of the modal, so we need to disable refocus on the button.
         'disable-refocus' => TRUE,
+        'options' => [
+          'query' => [
+            'form_mode' => $this->getSetting('form_mode'),
+          ],
+        ],
       ],
       '#attached' => [
         'library' => [
