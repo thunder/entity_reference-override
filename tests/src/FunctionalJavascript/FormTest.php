@@ -146,15 +146,13 @@ class FormTest extends WebDriverTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
 
     $modal = $page->find('css', '.ui-dialog');
-    $modal->fillField('name[0][value]', 'Overridden name');
+    $modal->checkField('field_description_override');
     $modal->fillField('field_description[0][value]', 'Overridden description');
     $page->find('css', '.ui-dialog button.form-submit')->click();
 
     // Open modal again to check if values persist.
     $page->pressButton('Override test entity - data table in context of this test entity');
     $this->assertSession()->assertWaitOnAjaxRequest();
-    $this->assertSession()
-      ->fieldValueEquals('name[0][value]', 'Overridden name', $modal);
     $this->assertSession()
       ->fieldValueEquals('field_description[0][value]', 'Overridden description', $modal);
     $page->find('css', '.ui-dialog button.form-submit')->click();
@@ -163,7 +161,7 @@ class FormTest extends WebDriverTestBase {
 
     $this->drupalGet($entity->toUrl());
 
-    $this->assertSession()->pageTextContains('Overridden name');
+    $this->assertSession()->pageTextContains('Original name');
     $this->assertSession()->pageTextContains('Overridden description');
   }
 
