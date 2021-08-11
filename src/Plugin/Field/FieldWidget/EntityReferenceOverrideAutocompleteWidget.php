@@ -3,14 +3,17 @@
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
-use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\PrivateKey;
+use Drupal\Core\Site\Settings;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -36,11 +39,27 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
   protected $entityDisplayRepository;
 
   /**
+   * The private temp store service.
+   *
+   * @var \Drupal\Core\TempStore\PrivateTempStore
+   */
+  protected $tempStore;
+
+  /**
+   * The private key service.
+   *
+   * @var \Drupal\Core\PrivateKey
+   */
+  protected $privateKey;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     $widget = parent::create($container, $configuration, $plugin_id, $plugin_definition);
     $widget->setEntityDisplayRepository($container->get('entity_display.repository'));
+    $widget->setPrivateTempStore($container->get('tempstore.private'));
+    $widget->setPrivateKey($container->get('private_key'));
     return $widget;
   }
 
@@ -52,6 +71,26 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   protected function setEntityDisplayRepository(EntityDisplayRepositoryInterface $entityDisplayRepository) {
     $this->entityDisplayRepository = $entityDisplayRepository;
+  }
+
+  /**
+   * Set the temp store service.
+   *
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $privateTempStoreFactory
+   *   The temp store service.
+   */
+  protected function setPrivateTempStore(PrivateTempStoreFactory $privateTempStoreFactory) {
+    $this->tempStore = $privateTempStoreFactory->get('entity_reference_override');
+  }
+
+  /**
+   * Set the private key service.
+   *
+   * @param \Drupal\Core\PrivateKey $privateKey
+   *   The private key service.
+   */
+  protected function setPrivateKey(PrivateKey $privateKey) {
+    $this->privateKey = $privateKey;
   }
 
   /**
@@ -114,8 +153,14 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       return $element;
     }
 
-    /** @var \Drupal\Core\Entity\EntityInterface $referencedEntity */
-    $referencedEntity = $items->referencedEntities()[$delta];
+    /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
+    $referenced_entity = $items->get($delta)->entity;
+
+    $hash = Crypt::hmacBase64($referenced_entity->entity_reference_override_property_path, Settings::getHashSalt() . $this->privateKey->get());
+    $this->tempStore->set($hash, [
+      'referenced_entity' => $referenced_entity,
+      'form_mode' => $this->getSetting('form_mode'),
+    ]);
 
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
@@ -126,9 +171,8 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#type' => 'button',
       '#name' => 'entity_reference_override-' . $field_name . '-' . $delta,
       '#value' => sprintf('Override %s in context of this %s',
-        $referencedEntity->getEntityType()->getSingularLabel(),
+        $referenced_entity->getEntityType()->getSingularLabel(),
         $entity->getEntityType()->getSingularLabel()),
-      '#entity_reference_override_referenced_entity' => $items->get($delta)->entity,
       '#ajax' => [
         'callback' => [static::class, 'openOverrideForm'],
         'progress' => [
@@ -140,7 +184,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
         'disable-refocus' => TRUE,
         'options' => [
           'query' => [
-            'form_mode' => $this->getSetting('form_mode'),
+            'hash' => $hash,
           ],
         ],
       ],
@@ -177,12 +221,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    *   The response object.
    */
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
-    $triggering_element = $form_state->getTriggeringElement();
-
-    $override_form_state = new FormState();
-    $override_form_state->set('entity_reference_override_referenced_entity', $triggering_element['#entity_reference_override_referenced_entity']);
-    $override_form = \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $override_form_state);
-
+    $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class);
     $dialog_options = static::overrideFormDialogOptions();
 
     return (new AjaxResponse())

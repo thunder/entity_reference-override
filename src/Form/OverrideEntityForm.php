@@ -3,7 +3,6 @@
 namespace Drupal\entity_reference_override\Form;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Ajax\AjaxFormHelperTrait;
 use Drupal\Core\Ajax\AjaxResponse;
@@ -14,8 +13,6 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\PrivateKey;
-use Drupal\Core\Site\Settings;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -42,20 +39,12 @@ class OverrideEntityForm extends FormBase {
   protected $tempStore;
 
   /**
-   * The private key service.
-   *
-   * @var \Drupal\Core\PrivateKey
-   */
-  protected $privateKey;
-
-  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     $form = parent::create($container);
     $form->setEntityDisplayRepository($container->get('entity_display.repository'));
     $form->setPrivateTempStore($container->get('tempstore.private'));
-    $form->setPrivateKey($container->get('private_key'));
     return $form;
   }
 
@@ -80,16 +69,6 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
-   * Set the private key service.
-   *
-   * @param \Drupal\Core\PrivateKey $privateKey
-   *   The private key service.
-   */
-  protected function setPrivateKey(PrivateKey $privateKey) {
-    $this->privateKey = $privateKey;
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -100,24 +79,18 @@ class OverrideEntityForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $hash = $this->getRequest()->query->get('hash');
+
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $form_state->get('entity_reference_override_referenced_entity');
-    if (!$referenced_entity) {
-      $token = $this->getRequest()->query->get('hash');
-      $referenced_entity = $this->tempStore->get($token);
-      $form_state->set('entity_reference_override_referenced_entity', $referenced_entity);
-    }
-    else {
-      $token = Crypt::hmacBase64($referenced_entity->entity_reference_override_property_path, Settings::getHashSalt() . $this->privateKey->get());
-      $this->tempStore->set($token, $referenced_entity);
-    }
+    $referenced_entity = $this->tempStore->get($hash)['referenced_entity'];
 
     $form['status_messages'] = [
       '#type' => 'status_messages',
       '#weight' => -1000,
     ];
 
-    $form_display = $this->getFormDisplay($referenced_entity);
+    $form_mode = $this->tempStore->get($hash)['form_mode'];
+    $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
     if ($form_display->isNew()) {
       $this->messenger()->addWarning($this->t('Form display mode %form_mode does not exists.', ['%form_mode' => $form_display->id()]));
       return $form;
@@ -134,7 +107,7 @@ class OverrideEntityForm extends FormBase {
         'url' => Url::fromRoute('entity_reference_override.form'),
         'options' => [
           'query' => $this->getRequest()->query->all() + [
-            'hash' => $token,
+            'hash' => $hash,
             FormBuilderInterface::AJAX_FORM_REQUEST => TRUE,
           ],
         ],
@@ -149,12 +122,14 @@ class OverrideEntityForm extends FormBase {
    *
    * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
    *   The referenced entity.
+   * @param string $form_mode
+   *   The form mode of the display.
    *
    * @return \Drupal\Core\Entity\Display\EntityFormDisplayInterface
    *   The overwrite form display.
    */
-  protected function getFormDisplay(EntityInterface $referenced_entity) {
-    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), $this->getRequest()->query->get('form_mode'));
+  protected function getFormDisplay(EntityInterface $referenced_entity, string $form_mode) {
+    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), $form_mode);
     $ignored_components = ['langcode', 'revision_log_message'];
     foreach ($ignored_components as $component) {
       $form_display->removeComponent($component);
@@ -198,13 +173,16 @@ class OverrideEntityForm extends FormBase {
   protected function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
 
+    $hash = $this->getRequest()->query->get('hash');
+
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $form_state->get('entity_reference_override_referenced_entity');
+    $referenced_entity = $this->tempStore->get($hash)['referenced_entity'];
+    $form_mode = $this->tempStore->get($hash)['form_mode'];
 
     [, , $field_name, $delta] = $this->getExtractedPropertyPath($referenced_entity);
 
     $values = [];
-    foreach ($this->getFormDisplay($referenced_entity)->getComponents() as $name => $component) {
+    foreach ($this->getFormDisplay($referenced_entity, $form_mode)->getComponents() as $name => $component) {
       $values[$name] = $form_state->getValue($name);
     }
 
