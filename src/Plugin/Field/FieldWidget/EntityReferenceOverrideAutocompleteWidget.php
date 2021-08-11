@@ -71,7 +71,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
 
     $element['form_mode'] = [
       '#type' => 'select',
-      '#title' => t('Form mode'),
+      '#title' => $this->t('Form mode'),
       '#default_value' => $this->getSetting('form_mode'),
       '#description' => $this->t('The override form mode for referenced entities.'),
       '#options' => $this->entityDisplayRepository->getFormModeOptions($this->fieldDefinition->getSetting('target_type')),
