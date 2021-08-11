@@ -84,7 +84,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   public function settingsSummary() {
     $summary = parent::settingsSummary();
-    $summary[] = t('Form mode: @form_mode', ['@form_mode' => $this->getSetting('form_mode')]);
+    $summary[] = $this->t('Form mode: @form_mode', ['@form_mode' => $this->getSetting('form_mode')]);
     return $summary;
   }
 
