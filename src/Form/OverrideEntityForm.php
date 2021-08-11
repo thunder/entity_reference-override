@@ -101,14 +101,14 @@ class OverrideEntityForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $form_state->get('entity_reference_override_entity');
+    $referenced_entity = $form_state->get('entity_reference_override_referenced_entity');
     if (!$referenced_entity) {
       $token = $this->getRequest()->query->get('hash');
       $referenced_entity = $this->tempStore->get($token);
-      $form_state->set('entity_reference_override_entity', $referenced_entity);
+      $form_state->set('entity_reference_override_referenced_entity', $referenced_entity);
     }
     else {
-      $token = Crypt::hmacBase64($referenced_entity->entity_reference_override, Settings::getHashSalt() . $this->privateKey->get());
+      $token = Crypt::hmacBase64($referenced_entity->entity_reference_override_property_path, Settings::getHashSalt() . $this->privateKey->get());
       $this->tempStore->set($token, $referenced_entity);
     }
 
@@ -136,6 +136,7 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
+<<<<<<< HEAD
    * Get overwrite form display for the referenced entity.
    *
    * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
@@ -155,15 +156,18 @@ class OverrideEntityForm extends FormBase {
 
   /**
    * Get referencing entity properties.
+=======
+   * Get extracted property path.
+>>>>>>> test/form
    *
    * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
-   *   The referencing entity.
+   *   The referenced entity.
    *
    * @return array
    *   Values are entity_type_id, bundle, field, delta.
    */
-  protected function getReferencingEntityProperties(EntityInterface $referenced_entity) {
-    [$entity_type, $field_name, $delta] = explode('.', $referenced_entity->entity_reference_override);
+  protected function getExtractedPropertyPath(EntityInterface $referenced_entity) {
+    [$entity_type, $field_name, $delta] = explode('.', $referenced_entity->entity_reference_override_property_path);
     [$entity_type_id, $bundle] = explode(':', $entity_type);
     return [$entity_type_id, $bundle, $field_name, $delta];
   }
@@ -190,9 +194,9 @@ class OverrideEntityForm extends FormBase {
     $response = new AjaxResponse();
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $form_state->get('entity_reference_override_entity');
+    $referenced_entity = $form_state->get('entity_reference_override_referenced_entity');
 
-    [, , $field_name, $delta] = $this->getReferencingEntityProperties($referenced_entity);
+    [, , $field_name, $delta] = $this->getExtractedPropertyPath($referenced_entity);
 
     $values = [];
     foreach ($this->getFormDisplay($referenced_entity)->getComponents() as $name => $component) {

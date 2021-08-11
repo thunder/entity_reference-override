@@ -66,7 +66,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#value' => sprintf('Override %s in context of this %s',
         $referencedEntity->getEntityType()->getSingularLabel(),
         $entity->getEntityType()->getSingularLabel()),
-      '#entity_reference_override_entity' => $items->get($delta)->entity,
+      '#entity_reference_override_referenced_entity' => $items->get($delta)->entity,
       '#ajax' => [
         'callback' => [static::class, 'openOverrideForm'],
         'progress' => [
@@ -113,7 +113,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $triggering_element = $form_state->getTriggeringElement();
 
     $override_form_state = new FormState();
-    $override_form_state->set('entity_reference_override_entity', $triggering_element['#entity_reference_override_entity']);
+    $override_form_state->set('entity_reference_override_referenced_entity', $triggering_element['#entity_reference_override_referenced_entity']);
     $override_form = \Drupal::formBuilder()->buildForm(OverrideEntityForm::class, $override_form_state);
 
     $dialog_options = static::overrideFormDialogOptions();
