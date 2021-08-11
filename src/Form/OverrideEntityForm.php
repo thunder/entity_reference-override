@@ -136,7 +136,6 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
-<<<<<<< HEAD
    * Get overwrite form display for the referenced entity.
    *
    * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
@@ -155,10 +154,7 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
-   * Get referencing entity properties.
-=======
    * Get extracted property path.
->>>>>>> test/form
    *
    * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
    *   The referenced entity.
