@@ -82,6 +82,15 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
   /**
    * {@inheritdoc}
    */
+  public function settingsSummary() {
+    $summary = parent::settingsSummary();
+    $summary[] = t('Form mode: @form_mode', ['@form_mode' => $this->getSetting('form_mode')]);
+    return $summary;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function form(FieldItemListInterface $items, array &$form, FormStateInterface $form_state, $get_delta = NULL) {
     // Load the items for form rebuilds from the field state.
     $field_state = static::getWidgetState($form['#parents'], $this->fieldDefinition->getName(), $form_state);
