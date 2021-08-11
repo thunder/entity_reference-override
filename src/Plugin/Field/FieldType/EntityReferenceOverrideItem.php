@@ -10,7 +10,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TypedData\MapDataDefinition;
 
 /**
- * Plugin implementation of the 'media' field type.
+ * Plugin implementation of the 'entity_reference_override' field type.
  *
  * @FieldType(
  *   id = "entity_reference_override",
@@ -43,7 +43,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
     $schema = parent::schema($field_definition);
 
     $schema['columns']['overwritten_property_map'] = [
-      'description' => 'A map to overwrite media data per instance.',
+      'description' => 'A map to overwrite entity data per instance.',
       'type' => 'blob',
       'size' => 'big',
       'serialize' => TRUE,
@@ -87,11 +87,14 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       $values = $field_value;
       if (is_array($field_value)) {
         // Remove keys that don't exists in original entity.
-        $field_value = array_intersect_key($field_value, $entity->get($field_name)->getValue());
-        $values = NestedArray::mergeDeepArray([
-          $entity->get($field_name)->getValue(),
-          $field_value,
-        ], TRUE);
+        $original_value = $entity->get($field_name)->getValue();
+        if ($original_value) {
+          $field_value = array_intersect_key($field_value, $original_value);
+          $values = NestedArray::mergeDeepArray([
+            $entity->get($field_name)->getValue(),
+            $field_value,
+          ], TRUE);
+        }
       }
       $entity->set($field_name, $values);
     }

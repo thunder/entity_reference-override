@@ -93,16 +93,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
   public function extractFormValues(FieldItemListInterface $items, array $form, FormStateInterface $form_state) {
     parent::extractFormValues($items, $form, $form_state);
 
-    $button = $form_state->getTriggeringElement();
-    if (!isset($button['#entity_reference_override_entity'])) {
-      return;
-    }
-
-    $field_state = static::getWidgetState([], $this->fieldDefinition->getName(), $form_state);
-
+    $field_state = static::getWidgetState($form['#parents'], $this->fieldDefinition->getName(), $form_state);
     $field_state['items'] = $items->getValue();
-
-    static::setWidgetState([], $this->fieldDefinition->getName(), $form_state, $field_state);
+    static::setWidgetState($form['#parents'], $this->fieldDefinition->getName(), $form_state, $field_state);
   }
 
   /**
