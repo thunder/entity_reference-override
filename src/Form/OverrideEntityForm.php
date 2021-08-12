@@ -312,9 +312,10 @@ class OverrideEntityForm extends FormBase {
     [, , $field_name, $delta] = $this->getExtractedPropertyPath($referenced_entity);
 
     $values = [];
-    foreach ($this->getFormDisplay($referenced_entity, $form_mode)->getComponents() as $name => $component) {
+    $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
+    foreach ($form_display->extractFormValues($referenced_entity, $form, $form_state) as $name) {
       if ($form_state->getValue($name . '_override')) {
-        $values[$name] = $form_state->getValue($name);
+        $values[$name] = $referenced_entity->get($name)->getValue();
       }
     }
 
