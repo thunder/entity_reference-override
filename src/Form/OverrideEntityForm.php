@@ -165,9 +165,6 @@ class OverrideEntityForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#button_type' => 'primary',
-      // The AJAX system automatically moves focus to the first tabbable
-      // element of the modal, so we need to disable refocus on the button.
-      'disable-refocus' => TRUE,
       '#ajax' => [
         'callback' => '::ajaxSubmit',
         'url' => Url::fromRoute('entity_reference_override.form'),
