@@ -125,6 +125,8 @@ class OverrideEntityForm extends FormBase {
 
     $form['#attached']['library'][] = 'entity_reference_override/form';
 
+    // @todo Remove the ID when we can use selectors to replace content via
+    //   AJAX in https://www.drupal.org/project/drupal/issues/2821793.
     $form['#prefix'] = '<div id="entity-reference-override-form-wrapper">';
     $form['#suffix'] = '</div>';
 
