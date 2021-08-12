@@ -1,0 +1,6 @@
+form:
+  version: VERSION
+  css:
+    theme:
+      css/form.css: {}
+

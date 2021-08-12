@@ -225,7 +225,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $dialog_options = static::overrideFormDialogOptions();
 
     return (new AjaxResponse())
-      ->addCommand(new OpenModalDialogCommand($dialog_options['title'], $override_form, $dialog_options));
+      ->addCommand(new OpenModalDialogCommand($form_state->getTriggeringElement()['#value'], $override_form, $dialog_options));
   }
 
   /**
@@ -236,7 +236,6 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   protected static function overrideFormDialogOptions() {
     return [
-      'title' => t('Override'),
       'minHeight' => '75%',
       'maxHeight' => '75%',
       'width' => '75%',

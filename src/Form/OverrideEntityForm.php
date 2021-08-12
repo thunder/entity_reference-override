@@ -4,10 +4,10 @@ namespace Drupal\entity_reference_override\Form;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Ajax\AjaxFormHelperTrait;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\InvokeCommand;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -24,8 +24,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Implements an example form.
  */
 class OverrideEntityForm extends FormBase {
-
-  use AjaxFormHelperTrait;
 
   /**
    * The entity display repository service.
@@ -125,9 +123,25 @@ class OverrideEntityForm extends FormBase {
     $referenced_entity = $store_entry['referenced_entity'];
     $form_mode = $store_entry['form_mode'];
 
+    $form['#attached']['library'][] = 'entity_reference_override/form';
+
+    $form['#prefix'] = '<div id="entity-reference-override-form-wrapper">';
+    $form['#suffix'] = '</div>';
+
     $form['status_messages'] = [
       '#type' => 'status_messages',
       '#weight' => -1000,
+    ];
+
+    [$referencing_entity_type] = $this->getExtractedPropertyPath($referenced_entity);
+    $referencing_entity_type_label = $this->entityTypeManager->getDefinition($referencing_entity_type)->getSingularLabel();
+    $form['help_text'] = [
+      '#type' => 'item',
+      '#markup' => $this->t('All changes made in here, only apply to this %entity_type that is referenced in the context of the parent %referencing_entity_type_label.', [
+        '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
+        '%referencing_entity_type_label' => $referencing_entity_type_label,
+      ]),
+      '#weight' => -1,
     ];
 
     $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
@@ -144,13 +158,16 @@ class OverrideEntityForm extends FormBase {
     $form_display->buildForm($original_entity, $original_form, $form_state);
 
     // Add overwrite checkbox to form elements.
-    $this->modifyForm($form, $original_form);
+    $this->modifyForm($form, $original_form, $referenced_entity);
 
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#button_type' => 'primary',
+      // The AJAX system automatically moves focus to the first tabbable
+      // element of the modal, so we need to disable refocus on the button.
+      'disable-refocus' => TRUE,
       '#ajax' => [
         'callback' => '::ajaxSubmit',
         'url' => Url::fromRoute('entity_reference_override.form'),
@@ -173,14 +190,23 @@ class OverrideEntityForm extends FormBase {
    *   The current form.
    * @param array $original_form
    *   The form with the original values.
+   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
+   *   The referenced entity.
    */
-  protected function modifyForm(array &$form, array $original_form) {
+  protected function modifyForm(array &$form, array $original_form, EntityInterface $referenced_entity) {
 
     foreach (Element::children($form) as $key) {
       if (isset($form[$key]['#access']) && !$form[$key]['#access']) {
         continue;
       }
       if (!($element = &$this->findFormElement($form[$key]))) {
+        continue;
+      }
+
+      // Entity keys can be displayed, but are not overridable.
+      $entity_type_keys = $referenced_entity->getEntityType()->getKeys();
+      if (in_array($key, $entity_type_keys)) {
+        $element['#disabled'] = TRUE;
         continue;
       }
 
@@ -194,13 +220,10 @@ class OverrideEntityForm extends FormBase {
         '#default_value' => $original_element['#default_value'] !== $element['#default_value'],
       ];
 
-      // Modify the referenced element a bit so it doesn't cause errors.
-      $element['#required'] = FALSE;
-
       // Disable form field until checkbox is checked.
       $form[$key]['#states'] = [
-        'enabled' => [
-          sprintf('[name="%s_override"]', $key) => ['checked' => TRUE],
+        'readonly' => [
+          sprintf('[name="%s_override"]', $key) => ['checked' => FALSE],
         ],
       ];
     }
@@ -297,10 +320,24 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * Submit form dialog #ajax callback.
+   *
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   An AJAX response that display validation error messages or represents a
+   *   successful submission.
    */
-  protected function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
+  public function ajaxSubmit(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
+
+    if ($form_state->hasAnyErrors()) {
+      $response->addCommand(new ReplaceCommand('#entity-reference-override-form-wrapper', $form));
+      return $response;
+    }
 
     $hash = $this->getRequest()->query->get('hash');
 
