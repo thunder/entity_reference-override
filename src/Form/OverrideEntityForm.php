@@ -81,15 +81,16 @@ class OverrideEntityForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $hash = $this->getRequest()->query->get('hash');
 
+    $store_entry = $this->tempStore->get($hash);
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $this->tempStore->get($hash)['referenced_entity'];
+    $referenced_entity = $store_entry['referenced_entity'];
+    $form_mode = $store_entry['form_mode'];
 
     $form['status_messages'] = [
       '#type' => 'status_messages',
       '#weight' => -1000,
     ];
 
-    $form_mode = $this->tempStore->get($hash)['form_mode'];
     $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
     if ($form_display->isNew()) {
       $this->messenger()->addWarning($this->t('Form display mode %form_mode does not exists.', ['%form_mode' => $form_display->id()]));
@@ -175,9 +176,10 @@ class OverrideEntityForm extends FormBase {
 
     $hash = $this->getRequest()->query->get('hash');
 
+    $store_entry = $this->tempStore->get($hash);
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $this->tempStore->get($hash)['referenced_entity'];
-    $form_mode = $this->tempStore->get($hash)['form_mode'];
+    $referenced_entity = $store_entry['referenced_entity'];
+    $form_mode = $store_entry['form_mode'];
 
     [, , $field_name, $delta] = $this->getExtractedPropertyPath($referenced_entity);
 
