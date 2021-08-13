@@ -167,7 +167,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
     ];
 
-    $modal_title = t('Override %entity_type in context of %bundle "%label"', [
+    $modal_title = $this->t('Override %entity_type in context of %bundle "%label"', [
       '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
       '%bundle' => ucfirst($entity->bundle()),
       '%label' => $entity->label(),
