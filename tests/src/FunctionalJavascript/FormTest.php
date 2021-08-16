@@ -55,16 +55,6 @@ class FormTest extends WebDriverTestBase {
       'entity_type' => $entity_type,
       'bundle' => $entity_type,
       'label' => $field_name,
-      'settings' => [
-        'overwritable_properties' => [
-          'entity_test_mul' => [
-            'options' => [
-              'field_description' => 'field_description',
-              'name' => 'name',
-            ],
-          ],
-        ],
-      ],
     ])->save();
 
     /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
@@ -97,6 +87,7 @@ class FormTest extends WebDriverTestBase {
       'entity_type' => $entity_type,
       'bundle' => $entity_type,
       'label' => $field_name,
+      'required' => TRUE,
     ])->save();
 
     $display_repository->getViewDisplay($entity_type, $entity_type)
@@ -146,6 +137,10 @@ class FormTest extends WebDriverTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
 
     $modal = $page->find('css', '.ui-dialog');
+    $modal->fillField('field_description[0][value]', '');
+    $page->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->elementTextContains('css', '.ui-dialog', 'field_description field is required.');
     $modal->fillField('field_description[0][value]', 'Overridden description');
     $page->find('css', '.ui-dialog button.form-submit')->click();
 
