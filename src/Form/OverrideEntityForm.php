@@ -264,9 +264,7 @@ class OverrideEntityForm extends FormBase {
     $values = [];
     $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
     foreach ($form_display->extractFormValues($referenced_entity, $form, $form_state) as $name) {
-      if ($form_state->getValue($name . '_override')) {
-        $values[$name] = $referenced_entity->get($name)->getValue();
-      }
+      $values[$name] = $referenced_entity->get($name)->getValue();
     }
 
     $selector = "[name=\"{$field_name}[$delta][overwritten_property_map]\"]";
