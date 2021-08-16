@@ -160,6 +160,15 @@ class OverrideEntityForm extends FormBase {
       }
     }
 
+    // Build form for the original entity.
+    /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
+    $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
+    $original_form = $form;
+    $form_display->buildForm($original_entity, $original_form, $form_state);
+
+    // Add overwrite checkbox to form elements.
+    $this->modifyForm($form, $original_form, $referenced_entity);
+
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
@@ -178,6 +187,83 @@ class OverrideEntityForm extends FormBase {
     ];
 
     return $form;
+  }
+
+  /**
+   * Add override checkbox to form elements.
+   *
+   * @param array $form
+   *   The current form.
+   * @param array $original_form
+   *   The form with the original values.
+   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
+   *   The referenced entity.
+   */
+  protected function modifyForm(array &$form, array $original_form, EntityInterface $referenced_entity) {
+
+    foreach (Element::children($form) as $key) {
+      if ((isset($form[$key]['#access']) && !$form[$key]['#access']) || $form[$key]['#disabled']) {
+        continue;
+      }
+      if (!($element = &$this->findFormElement($form[$key]))) {
+        continue;
+      }
+
+      $original_element = $this->findFormElement($original_form[$key]);
+
+      // Add the override checkbox to the form.
+      $form[$key . '_override'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Override field value'),
+        '#weight' => $form[$key]['#weight'] ?? 0,
+        '#default_value' => $original_element['#default_value'] !== $element['#default_value'],
+      ];
+
+      // Disable form field until checkbox is checked.
+      $form[$key]['#states'] = [
+        'readonly' => [
+          sprintf('[name="%s_override"]', $key) => ['checked' => FALSE],
+        ],
+      ];
+    }
+  }
+
+  /**
+   * Finds the deepest most form element and returns it.
+   *
+   * @param array $form
+   *   The form element we're searching.
+   * @param string $title
+   *   The most recent non-empty title from previous form elements.
+   *
+   * @return array|null
+   *   The deepest most element if we can find it.
+   */
+  protected function &findFormElement(array &$form, $title = NULL) {
+    $element = NULL;
+    foreach (Element::children($form) as $key) {
+      // Not all levels have both #title and #type.
+      // Attempt to inherit #title from previous iterations.
+      // Some #titles are empty strings.  Ignore them.
+      if (!empty($form[$key]['#title'])) {
+        $title = $form[$key]['#title'];
+      }
+      elseif (!empty($form[$key]['title']['#value']) && !empty($form[$key]['title']['#type']) && $form[$key]['title']['#type'] === 'html_tag') {
+        $title = $form[$key]['title']['#value'];
+      }
+      if (isset($form[$key]['#type']) && !empty($title)) {
+        // Fix empty or missing #title in $form.
+        if (empty($form[$key]['#title'])) {
+          $form[$key]['#title'] = $title;
+        }
+        $element = &$form[$key];
+        break;
+      }
+      elseif (is_array($form[$key])) {
+        $element = &$this->findFormElement($form[$key], $title);
+      }
+    }
+    return $element;
   }
 
   /**
