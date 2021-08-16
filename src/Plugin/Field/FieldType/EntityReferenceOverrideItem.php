@@ -60,7 +60,6 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       $entity = clone parent::__get('entity');
       if (!empty($this->values['overwritten_property_map'])) {
         $this->overwriteFields($entity, $this->values['overwritten_property_map']);
-
         $translation = $entity->getTranslation($this->getLangcode());
         $this->overwriteFields($translation, $this->values['overwritten_property_map']);
 
@@ -68,6 +67,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
         $entity->entity_reference_override_overwritten = TRUE;
       }
       $entity->entity_reference_override_property_path = sprintf('%s:%s.%s', $this->getEntity()->getEntityTypeId(), $this->getEntity()->bundle(), $this->getPropertyPath());
+
       return $entity;
     }
     return parent::__get($name);

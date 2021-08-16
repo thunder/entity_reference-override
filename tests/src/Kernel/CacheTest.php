@@ -55,35 +55,54 @@ class CacheTest extends EntityReferenceOverrideTestBase {
   }
 
   /**
-   * Testing that all expected cache contexts exists.
+   * Testing that all expected cache keys exists.
    */
-  public function testCacheContexts() {
+  public function testCacheKeys() {
     $referenced_entity = EntityTestMul::create([
       'name' => 'Referenced entity',
       'field_description' => 'Description',
     ]);
     $referenced_entity->save();
 
+    $view_builder = \Drupal::entityTypeManager()->getViewBuilder('entity_test');
+
     $entity = EntityTest::create([
       'name' => 'Test entity',
       'field_reference_override' => [
         'target_id' => $referenced_entity->id(),
-        'overwritten_property_map' => [
-          'field_description' => 'Overridden description',
-        ],
       ],
       'field_reference_override_2' => [
-        'target_id' => $referenced_entity->id(),
+        [
+          'target_id' => $referenced_entity->id(),
+        ],
+        [
+          'target_id' => $referenced_entity->id(),
+        ],
       ],
     ]);
-
     $entity->save();
 
-    $uuid = $entity->field_reference_override->getFieldDefinition()->getUniqueIdentifier();
-    $this->assertContains('overridden_reference_field:' . $uuid, $entity->field_reference_override->entity->getCacheContexts());
+    $render = $view_builder->view($entity->field_reference_override->entity);
+    $this->assertNotContains('entity_reference_override:', $render['#cache']['keys']);
 
-    $uuid = $entity->field_reference_override_2->getFieldDefinition()->getUniqueIdentifier();
-    $this->assertContains('overridden_reference_field:' . $uuid, $entity->field_reference_override_2->entity->getCacheContexts());
+    $render = $view_builder->view($entity->field_reference_override_2->entity);
+    $this->assertNotContains('entity_reference_override:', $render['#cache']['keys']);
+
+    $entity->field_reference_override->overwritten_property_map = [
+      'field_description' => 'Overridden description',
+    ];
+    $entity->field_reference_override_2->get(1)->overwritten_property_map = [
+      'field_description' => 'Overridden second description',
+    ];
+    $entity->save();
+
+    $render = $view_builder->view($entity->field_reference_override->entity);
+    $this->assertContains('entity_reference_override:entity_test:entity_test.field_reference_override.0', $render['#cache']['keys']);
+
+    $render = $view_builder->view($entity->field_reference_override_2->entity);
+    $this->assertNotContains('entity_reference_override:', $render['#cache']['keys']);
+    $render = $view_builder->view($entity->field_reference_override_2->get(1)->entity);
+    $this->assertContains('entity_reference_override:entity_test:entity_test.field_reference_override_2.1', $render['#cache']['keys']);
   }
 
   /**
