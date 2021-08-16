@@ -8,12 +8,5 @@
             "name": "Christian Fritsch",
             "email": "christian.fritsch@burda.com"
         }
-    ],
-    "extra": {
-        "patches": {
-            "drupal/core": {
-                "Readonly doesn't work on #States": "https://www.drupal.org/files/issues/2021-05-06/drupal_core-2866383-readonly-doesnt-work-on-states-21.patch"
-            }
-        }
-    }
+    ]
 }
