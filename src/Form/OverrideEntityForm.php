@@ -15,7 +15,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Render\Element;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -151,13 +150,33 @@ class OverrideEntityForm extends FormBase {
       $this->messenger()->addWarning($this->t('Form display mode %form_mode does not exists.', ['%form_mode' => $form_display->id()]));
       return $form;
     }
+
+    /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
+    $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
+
     $form_display->buildForm($referenced_entity, $form, $form_state);
-    foreach (Element::children($form) as $key) {
+    foreach ($form_display->getComponents() as $key => $component) {
       // Entity keys can be displayed, but are not overridable.
       $entity_type_keys = $referenced_entity->getEntityType()->getKeys();
       if (in_array($key, $entity_type_keys)) {
         $form[$key]['#disabled'] = TRUE;
+        continue;
       }
+
+      // Add the override checkbox to the form.
+      $form[$key . '_override'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Override field value'),
+        '#weight' => $form[$key]['#weight'] ?? 0,
+        '#default_value' => !$referenced_entity->get($key)->equals($original_entity->get($key)),
+      ];
+
+      // Disable form field until checkbox is checked.
+      $form[$key]['#states'] = [
+        'readonly' => [
+          sprintf('[name="%s_override"]', $key) => ['checked' => FALSE],
+        ],
+      ];
     }
 
     $form['actions'] = ['#type' => 'actions'];
@@ -265,7 +284,9 @@ class OverrideEntityForm extends FormBase {
     $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
     foreach ($form_display->extractFormValues($referenced_entity, $form, $form_state) as $name) {
       if (!isset($form[$name]['#disabled']) || !$form[$name]['#disabled']) {
-        $values[$name] = $referenced_entity->get($name)->getValue();
+        if ($form_state->getValue($name . '_override')) {
+          $values[$name] = $referenced_entity->get($name)->getValue();
+        }
       }
     }
 

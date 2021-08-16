@@ -1,0 +1,19 @@
+.form-readonly label {
+  color: #686868;
+}
+.form-readonly input.form-date,
+.form-readonly input.form-text,
+.form-readonly input.form-tel,
+.form-readonly input.form-time,
+.form-readonly input.form-email,
+.form-readonly input.form-url,
+.form-readonly input.form-search,
+.form-readonly input.form-number,
+.form-readonly input.form-color,
+.form-readonly input.form-file,
+.form-readonly textarea.form-textarea,
+.form-readonly select.form-select {
+  border-color: #d4d4d4;
+  background-color: hsla(0, 0%, 0%, 0.08);
+  box-shadow: none;
+}
