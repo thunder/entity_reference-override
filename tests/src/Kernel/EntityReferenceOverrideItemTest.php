@@ -5,7 +5,6 @@ namespace Drupal\Tests\entity_reference_override\Kernel;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\Tests\media\Kernel\MediaKernelTestBase;
 
 /**

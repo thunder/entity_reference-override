@@ -8,6 +8,9 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
 
+/**
+ * Testing translation related use cases.
+ */
 class TranslationTest extends EntityReferenceOverrideTestBase {
 
   /**

@@ -59,7 +59,6 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $entity = clone parent::__get('entity');
       if (!empty($this->values['overwritten_property_map'])) {
-        $this->overwriteFields($entity, $this->values['overwritten_property_map']);
         if ($entity->hasTranslation($this->getLangcode())) {
           $entity = $entity->getTranslation($this->getLangcode());
         }
