@@ -160,15 +160,6 @@ class OverrideEntityForm extends FormBase {
       }
     }
 
-    // Build form for the original entity.
-    /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
-    $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
-    $original_form = $form;
-    $form_display->buildForm($original_entity, $original_form, $form_state);
-
-    // Add overwrite checkbox to form elements.
-    $this->modifyForm($form, $original_form, $referenced_entity);
-
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
@@ -350,7 +341,7 @@ class OverrideEntityForm extends FormBase {
     $values = [];
     $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
     foreach ($form_display->extractFormValues($referenced_entity, $form, $form_state) as $name) {
-      if ($form_state->getValue($name . '_override')) {
+      if (!isset($form[$name]['#disabled']) || !$form[$name]['#disabled']) {
         $values[$name] = $referenced_entity->get($name)->getValue();
       }
     }

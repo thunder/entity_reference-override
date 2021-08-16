@@ -155,6 +155,14 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
     $this->assertEquals('Nice description for media 2!', $entity->field_media->get(1)->entity->field_media_file->get(0)->description);
     $this->assertEquals(3, $entity->field_media->get(1)->entity->field_media_file->entity->id());
     $this->assertEquals('test1.patch', $entity->field_media->get(1)->entity->field_media_file->entity->getFilename());
+
+    $entity->field_media->get(0)->overwritten_property_map = [
+      'name' => 'Overwritten name for media 2',
+      'field_text' => [],
+    ];
+    $entity->save();
+    $this->assertEmpty($entity->field_media->get(0)->entity->field_text->get(0));
+    $this->assertEmpty($entity->field_media->get(0)->entity->field_text->get(1));
   }
 
   /**

@@ -98,7 +98,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   public static function defaultSettings() {
     return [
-      'form_mode' => '',
+      'form_mode' => 'default',
     ] + parent::defaultSettings();
   }
 
