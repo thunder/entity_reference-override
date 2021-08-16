@@ -60,8 +60,10 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       $entity = clone parent::__get('entity');
       if (!empty($this->values['overwritten_property_map'])) {
         $this->overwriteFields($entity, $this->values['overwritten_property_map']);
-        $translation = $entity->getTranslation($this->getLangcode());
-        $this->overwriteFields($translation, $this->values['overwritten_property_map']);
+        if ($entity->hasTranslation($this->getLangcode())) {
+          $entity = $entity->getTranslation($this->getLangcode());
+        }
+        $this->overwriteFields($entity, $this->values['overwritten_property_map']);
 
         $entity->addCacheableDependency($this->getEntity());
         $entity->entity_reference_override_overwritten = TRUE;
