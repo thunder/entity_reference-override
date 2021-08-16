@@ -84,7 +84,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
   protected function overwriteFields(EntityInterface $entity, array $overwritten_property_map) {
     foreach ($overwritten_property_map as $field_name => $field_value) {
       $values = $field_value;
-      if (is_array($field_value)) {
+      if (is_array($field_value) && !empty($field_value)) {
         // Remove keys that don't exists in original entity.
         $original_value = $entity->get($field_name)->getValue();
         if ($original_value) {
