@@ -1,7 +1,6 @@
 entity_reference_override.form:
-  path: '/entity_reference_override/edit/{entity_type}/{entity_id}/{langcode}/{field_name}/{delta}'
+  path: '/entity_reference_override'
   defaults:
-    _form: 'Drupal\entity_reference_override\Form\OverrideEntityForm'
-    _title: 'Override files in context.'
+    _form: '\Drupal\entity_reference_override\Form\OverrideEntityForm'
   requirements:
     _custom_access: '\Drupal\entity_reference_override\Form\OverrideEntityForm::access'

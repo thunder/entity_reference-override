@@ -9,11 +9,12 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
-use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -31,18 +32,11 @@ class OverrideEntityForm extends FormBase {
   protected $entityDisplayRepository;
 
   /**
-   * The entity field manager service.
+   * The private temp store service.
    *
-   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   * @var \Drupal\Core\TempStore\PrivateTempStore
    */
-  protected $entityFieldManager;
-
-  /**
-   * The entity type manager service.
-   *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
-   */
-  protected $entityTypeManager;
+  protected $tempStore;
 
   /**
    * {@inheritdoc}
@@ -50,8 +44,7 @@ class OverrideEntityForm extends FormBase {
   public static function create(ContainerInterface $container) {
     $form = parent::create($container);
     $form->setEntityDisplayRepository($container->get('entity_display.repository'));
-    $form->setEntityFieldManager($container->get('entity_field.manager'));
-    $form->setEntityTypeManager($container->get('entity_type.manager'));
+    $form->setPrivateTempStore($container->get('tempstore.private'));
     return $form;
   }
 
@@ -66,23 +59,13 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
-   * Set the entity field manager service.
+   * Set the temp store service.
    *
-   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
-   *   The entity field manager service.
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $privateTempStoreFactory
+   *   The temp store service.
    */
-  protected function setEntityFieldManager(EntityFieldManagerInterface $entityFieldManager) {
-    $this->entityFieldManager = $entityFieldManager;
-  }
-
-  /**
-   * Set the entity type manager service.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
-   *   The entity type manager service.
-   */
-  protected function setEntityTypeManager(EntityTypeManagerInterface $entityTypeManager) {
-    $this->entityTypeManager = $entityTypeManager;
+  protected function setPrivateTempStore(PrivateTempStoreFactory $privateTempStoreFactory) {
+    $this->tempStore = $privateTempStoreFactory->get('entity_reference_override');
   }
 
   /**
@@ -95,27 +78,24 @@ class OverrideEntityForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, string $entity_type = NULL, string $langcode = NULL, int $entity_id = NULL, string $field_name = NULL, $delta = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
+    $hash = $this->getRequest()->query->get('hash');
 
-    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-    $entity = $this->entityTypeManager->getStorage($entity_type)
-      ->load($entity_id);
-    $entity = $entity->getTranslation($langcode);
-
+    $store_entry = $this->tempStore->get($hash);
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $entity->{$field_name}->get($delta)->entity;
+    $referenced_entity = $store_entry['referenced_entity'];
+    $form_mode = $store_entry['form_mode'];
 
-    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle());
+    $form['status_messages'] = [
+      '#type' => 'status_messages',
+      '#weight' => -1000,
+    ];
 
-    $definitions = $this->entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
-    $options = $definitions[$field_name]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'];
-
-    foreach ($form_display->getComponents() as $name => $component) {
-      if (!in_array($name, array_filter($options))) {
-        $form_display->removeComponent($name);
-      }
+    $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
+    if ($form_display->isNew()) {
+      $this->messenger()->addWarning($this->t('Form display mode %form_mode does not exists.', ['%form_mode' => $form_display->id()]));
+      return $form;
     }
-
     $form_display->buildForm($referenced_entity, $form, $form_state);
 
     $form['actions'] = ['#type' => 'actions'];
@@ -123,72 +103,60 @@ class OverrideEntityForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save'),
       '#button_type' => 'primary',
+      '#ajax' => [
+        'callback' => '::ajaxSubmit',
+        'url' => Url::fromRoute('entity_reference_override.form'),
+        'options' => [
+          'query' => $this->getRequest()->query->all() + [
+            'hash' => $hash,
+            FormBuilderInterface::AJAX_FORM_REQUEST => TRUE,
+          ],
+        ],
+      ],
     ];
-
-    $form_state->set('entity_reference_override', [
-      'entity_type' => $entity_type,
-      'entity_id' => $entity_id,
-      'langcode' => $langcode,
-      'field_name' => $field_name,
-      'delta' => $delta,
-    ]);
-
-    if ($this->isAjax()) {
-      $form['actions']['submit']['#ajax']['callback'] = '::ajaxSubmit';
-    }
 
     return $form;
   }
 
   /**
-   * {@inheritdoc}
+   * Get overwrite form display for the referenced entity.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
+   *   The referenced entity.
+   * @param string $form_mode
+   *   The form mode of the display.
+   *
+   * @return \Drupal\Core\Entity\Display\EntityFormDisplayInterface
+   *   The overwrite form display.
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    if ($this->isAjax()) {
-      return;
+  protected function getFormDisplay(EntityInterface $referenced_entity, string $form_mode) {
+    $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), $form_mode);
+    $ignored_components = ['langcode', 'revision_log_message'];
+    foreach ($ignored_components as $component) {
+      $form_display->removeComponent($component);
     }
-
-    $arguments = $form_state->get('entity_reference_override');
-
-    /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
-    $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
-      ->load($arguments['entity_id']);
-    $entity = $entity->getTranslation($arguments['langcode']);
-
-    $entity->{$arguments['field_name']}->get($arguments['delta'])->overwritten_property_map = $this->getOverwrittenValues($form_state, $entity);
-    $entity->save();
-
+    return $form_display;
   }
 
   /**
-   * Get overwritten values for an entity.
+   * Get extracted property path.
    *
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state object.
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The parent entity.
+   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
+   *   The referenced entity.
    *
-   * @return string
-   *   The overridden values as JSON.
+   * @return array
+   *   Values are entity_type_id, bundle, field, delta.
    */
-  protected function getOverwrittenValues(FormStateInterface $form_state, EntityInterface $entity) {
-    $arguments = $form_state->get('entity_reference_override');
-
-    /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
-    $referenced_entity = $entity->{$arguments['field_name']}->get($arguments['delta'])->entity;
-
-    $definitions = $this->entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
-
-    $options = $definitions[$arguments['field_name']]->getSetting('overwritable_properties')[$referenced_entity->bundle()]['options'];
-
-    $values = [];
-    foreach ($options as $name => $enabled) {
-      if ($enabled) {
-        $values = [$name => $form_state->getValue($name)];
-      }
-    }
-    return Json::encode($values);
+  protected function getExtractedPropertyPath(EntityInterface $referenced_entity) {
+    [$entity_type, $field_name, $delta] = explode('.', $referenced_entity->entity_reference_override_property_path);
+    [$entity_type_id, $bundle] = explode(':', $entity_type);
+    return [$entity_type_id, $bundle, $field_name, $delta];
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {}
 
   /**
    * The access function.
@@ -206,19 +174,24 @@ class OverrideEntityForm extends FormBase {
   protected function successfulAjaxSubmit(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
 
-    $arguments = $form_state->get('entity_reference_override');
+    $hash = $this->getRequest()->query->get('hash');
 
-    /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
-    $entity = $this->entityTypeManager->getStorage($arguments['entity_type'])
-      ->load($arguments['entity_id']);
-    $entity = $entity->getTranslation($arguments['langcode']);
+    $store_entry = $this->tempStore->get($hash);
+    /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
+    $referenced_entity = $store_entry['referenced_entity'];
+    $form_mode = $store_entry['form_mode'];
 
-    $values = $this->getOverwrittenValues($form_state, $entity);
+    [, , $field_name, $delta] = $this->getExtractedPropertyPath($referenced_entity);
 
-    $selector = "[name=\"{$arguments['field_name']}[{$arguments['delta']}][overwritten_property_map]\"]";
+    $values = [];
+    foreach ($this->getFormDisplay($referenced_entity, $form_mode)->getComponents() as $name => $component) {
+      $values[$name] = $form_state->getValue($name);
+    }
+
+    $selector = "[name=\"{$field_name}[$delta][overwritten_property_map]\"]";
 
     $response
-      ->addCommand(new InvokeCommand($selector, 'val', [$values]))
+      ->addCommand(new InvokeCommand($selector, 'val', [Json::encode($values)]))
       ->addCommand(new CloseDialogCommand());
 
     return $response;

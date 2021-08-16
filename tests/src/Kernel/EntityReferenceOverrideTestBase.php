@@ -19,6 +19,7 @@ class EntityReferenceOverrideTestBase extends KernelTestBase {
     'system',
     'field',
     'entity_test',
+    'language',
     'text',
     'entity_reference_override',
   ];
@@ -26,7 +27,7 @@ class EntityReferenceOverrideTestBase extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('entity_test');
