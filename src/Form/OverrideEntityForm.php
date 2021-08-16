@@ -152,6 +152,13 @@ class OverrideEntityForm extends FormBase {
       return $form;
     }
     $form_display->buildForm($referenced_entity, $form, $form_state);
+    foreach (Element::children($form) as $key) {
+      // Entity keys can be displayed, but are not overridable.
+      $entity_type_keys = $referenced_entity->getEntityType()->getKeys();
+      if (in_array($key, $entity_type_keys)) {
+        $form[$key]['#disabled'] = TRUE;
+      }
+    }
 
     // Build form for the original entity.
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
@@ -195,17 +202,10 @@ class OverrideEntityForm extends FormBase {
   protected function modifyForm(array &$form, array $original_form, EntityInterface $referenced_entity) {
 
     foreach (Element::children($form) as $key) {
-      if (isset($form[$key]['#access']) && !$form[$key]['#access']) {
+      if ((isset($form[$key]['#access']) && !$form[$key]['#access']) || $form[$key]['#disabled']) {
         continue;
       }
       if (!($element = &$this->findFormElement($form[$key]))) {
-        continue;
-      }
-
-      // Entity keys can be displayed, but are not overridable.
-      $entity_type_keys = $referenced_entity->getEntityType()->getKeys();
-      if (in_array($key, $entity_type_keys)) {
-        $element['#disabled'] = TRUE;
         continue;
       }
 
