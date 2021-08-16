@@ -146,7 +146,6 @@ class FormTest extends WebDriverTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
 
     $modal = $page->find('css', '.ui-dialog');
-    $modal->checkField('field_description_override');
     $modal->fillField('field_description[0][value]', 'Overridden description');
     $page->find('css', '.ui-dialog button.form-submit')->click();
 
