@@ -268,10 +268,8 @@ class OverrideEntityForm extends FormBase {
 
     $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
     foreach ($form_display->extractFormValues($referenced_entity, $form, $form_state) as $name) {
-      if (!isset($form[$name]['#disabled']) || !$form[$name]['#disabled']) {
-        if (!$referenced_entity->get($name)->equals($original_entity->get($name))) {
-          $values[$name] = $referenced_entity->get($name)->getValue();
-        }
+      if (!$referenced_entity->get($name)->equals($original_entity->get($name))) {
+        $values[$name] = $referenced_entity->get($name)->getValue();
       }
     }
 
