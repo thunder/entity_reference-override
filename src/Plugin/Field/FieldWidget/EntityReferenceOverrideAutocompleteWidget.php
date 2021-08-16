@@ -98,7 +98,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   public static function defaultSettings() {
     return [
-      'form_mode' => '',
+      'form_mode' => 'default',
     ] + parent::defaultSettings();
   }
 
@@ -167,21 +167,25 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
     ];
 
+    $modal_title = $this->t('Override %entity_type in context of %bundle "%label"', [
+      '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
+      '%bundle' => ucfirst($entity->bundle()),
+      '%label' => $entity->label(),
+    ]);
+
     $element['edit'] = [
       '#type' => 'button',
       '#name' => 'entity_reference_override-' . $field_name . '-' . $delta,
       '#value' => sprintf('Override %s in context of this %s',
         $referenced_entity->getEntityType()->getSingularLabel(),
         $entity->getEntityType()->getSingularLabel()),
+      '#modal_title' => $modal_title,
       '#ajax' => [
         'callback' => [static::class, 'openOverrideForm'],
         'progress' => [
           'type' => 'throbber',
           'message' => $this->t('Opening override form.'),
         ],
-        // The AJAX system automatically moves focus to the first tabbable
-        // element of the modal, so we need to disable refocus on the button.
-        'disable-refocus' => TRUE,
         'options' => [
           'query' => [
             'hash' => $hash,
@@ -223,9 +227,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
     $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class);
     $dialog_options = static::overrideFormDialogOptions();
-
+    $button = $form_state->getTriggeringElement();
     return (new AjaxResponse())
-      ->addCommand(new OpenModalDialogCommand($dialog_options['title'], $override_form, $dialog_options));
+      ->addCommand(new OpenModalDialogCommand($button['#modal_title'], $override_form, $dialog_options));
   }
 
   /**
@@ -236,7 +240,6 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    */
   protected static function overrideFormDialogOptions() {
     return [
-      'title' => t('Override'),
       'minHeight' => '75%',
       'maxHeight' => '75%',
       'width' => '75%',
