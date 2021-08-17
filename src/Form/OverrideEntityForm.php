@@ -307,7 +307,6 @@ class OverrideEntityForm extends FormBase {
       $new_field_value = $referenced_entity->get($field)->getValue();
       $merged_field_value = [];
       foreach ($new_field_value as $key => $value) {
-
         $merged_field_value[$key] = array_merge($original_field_value[$key] ?? [], $value);
       }
       $referenced_entity->set($field, $merged_field_value);
