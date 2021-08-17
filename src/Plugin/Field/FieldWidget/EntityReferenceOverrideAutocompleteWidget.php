@@ -155,6 +155,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
 
     /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
     $referenced_entity = $items->get($delta)->entity;
+    if ($referenced_entity->hasTranslation($entity->language()->getId())) {
+      $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
+    }
 
     $hash = Crypt::hmacBase64($referenced_entity->entity_reference_override_property_path, Settings::getHashSalt() . $this->privateKey->get());
     $this->tempStore->set($hash, [

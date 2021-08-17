@@ -42,57 +42,101 @@ class TranslationTest extends EntityReferenceOverrideTestBase {
       'label' => $field_name,
     ])->save();
 
+    ConfigurableLanguage::create([
+      'id' => 'de',
+      'label' => 'German',
+    ])->save();
   }
 
   /**
-   * Test translated overwritten metadata.
+   * Test with translatable parent entity and an untranslatable reference.
    *
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function testTranslatableOverwrittenMetadata() {
-    for ($i = 0; $i < 3; ++$i) {
-      $language_id = 'l' . $i;
-      ConfigurableLanguage::create([
-        'id' => $language_id,
-        'label' => $this->randomString(),
-      ])->save();
-    }
-    $available_langcodes = array_keys($this->container->get('language_manager')
-      ->getLanguages());
-
+  public function testTranslatableParentWithUntranslatableReference() {
     $referenced_entity = EntityTestMul::create([
       'name' => 'Referenced entity',
       'field_description' => 'Main description',
     ]);
-
-    foreach ($available_langcodes as $langcode) {
-      $translation = $referenced_entity->hasTranslation($langcode) ? $referenced_entity->getTranslation($langcode) : $referenced_entity->addTranslation($langcode, $referenced_entity->toArray());
-      $translation->setName("Name $langcode");
-    }
     $referenced_entity->save();
 
+    // Create english parent entity.
     $entity = EntityTest::create([
       'name' => 'Test entity',
-      'field_reference_override' => $referenced_entity,
-      'langcode' => reset($available_langcodes),
+      'field_reference_override' => [
+        'target_id' => $referenced_entity->id(),
+      ],
+      'langcode' => 'en',
     ]);
-
-    foreach ($available_langcodes as $langcode) {
-      $translation = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : $entity->addTranslation($langcode, $entity->toArray());
-      $translation->field_reference_override->overwritten_property_map = [
-        'field_description' => "Nice $langcode description!",
-      ];
-      $translation->save();
-    }
     $entity->save();
 
-    foreach ($available_langcodes as $langcode) {
-      $translation = $entity->getTranslation($langcode);
-      $reference_translation = $translation->field_reference_override->entity->getTranslation($langcode);
+    // Add german translation.
+    $entity->addTranslation('de', $entity->toArray());
+    $entity->save();
 
-      $this->assertEquals("Name $langcode", $reference_translation->getName());
-      $this->assertEquals("Nice $langcode description!", $reference_translation->field_description->value);
-    }
+    $entity->field_reference_override->overwritten_property_map = [
+      'field_description' => "Nice english description!",
+    ];
+
+    $this->assertEquals("Nice english description!", $entity->field_reference_override->entity->field_description->value);
+
+    $translation = $entity->getTranslation('de');
+    $this->assertEquals("Main description", $translation->field_reference_override->entity->field_description->value);
+
+    $translation->field_reference_override->overwritten_property_map = [
+      'field_description' => "Nice german description!",
+    ];
+    $translation->save();
+    $this->assertEquals("Nice german description!", $translation->field_reference_override->entity->field_description->value);
+  }
+
+  /**
+   * Test with translatable parent entity and a translatable reference.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  public function testTranslatableParentWithTranslatableReference() {
+    $referenced_entity = EntityTestMul::create([
+      'name' => 'Referenced entity',
+      'field_description' => 'Main english description',
+      'langcode' => 'en',
+    ]);
+    $referenced_entity->save();
+    $translation = $referenced_entity->addTranslation('de', $referenced_entity->toArray());
+    $translation->field_description = 'Main german description';
+    $translation->save();
+
+    // Create english parent entity.
+    $entity = EntityTest::create([
+      'name' => 'Test entity',
+      'field_reference_override' => [
+        'target_id' => $referenced_entity->id(),
+      ],
+      'langcode' => 'en',
+    ]);
+    $entity->save();
+
+    // Add german translation.
+    $entity->addTranslation('de', $entity->toArray());
+    $entity->save();
+
+    $entity->field_reference_override->overwritten_property_map = [
+      'field_description' => "Nice english description!",
+    ];
+
+    $this->assertEquals("Nice english description!", $entity->field_reference_override->entity->field_description->value);
+
+    $translation = $entity->getTranslation('de');
+    $this->assertEquals("Main english description", $translation->field_reference_override->entity->field_description->value);
+    $referenced_translation = $translation->field_reference_override->entity->getTranslation('de');
+    $this->assertEquals("Main german description", $referenced_translation->field_description->value);
+
+    $translation->field_reference_override->overwritten_property_map = [
+      'field_description' => "Nice german description!",
+    ];
+    $translation->save();
+    $referenced_translation = $translation->field_reference_override->entity->getTranslation('de');
+    $this->assertEquals("Nice german description!", $referenced_translation->field_description->value);
   }
 
 }
