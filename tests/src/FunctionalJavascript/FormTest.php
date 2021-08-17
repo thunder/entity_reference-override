@@ -115,7 +115,10 @@ class FormTest extends WebDriverTestBase {
   public function testSetOverride() {
     $referenced_entity = EntityTestMul::create([
       'name' => 'Original name',
-      'field_description' => 'Original description',
+      'field_description' => [
+        'value' => 'Original description',
+        'format' => 'plain_text',
+      ],
     ]);
     $referenced_entity->save();
     $entity = EntityTest::create([
@@ -133,14 +136,24 @@ class FormTest extends WebDriverTestBase {
 
     $page = $this->getSession()->getPage();
 
+    // Check that only properties with different values are saved to the hidden
+    // field.
     $page->pressButton('Override test entity - data table in context of this test entity');
     $this->assertSession()->assertWaitOnAjaxRequest();
+    $page->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->hiddenFieldValueEquals('field_reference_override[0][overwritten_property_map]', '[]');
 
+    // Check that form validation errors are shown.
+    $page->pressButton('Override test entity - data table in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $page->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', '');
     $page->find('css', '.ui-dialog button.form-submit')->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()->elementTextContains('css', '.ui-dialog', 'field_description field is required.');
+
+    // Set a new different value for the description.
     $modal->fillField('field_description[0][value]', 'Overridden description');
     $page->find('css', '.ui-dialog button.form-submit')->click();
 
