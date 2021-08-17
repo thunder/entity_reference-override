@@ -196,7 +196,7 @@ class OverrideEntityForm extends FormBase {
     $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), $form_mode);
     $definitions = $this->entityFieldManager->getFieldDefinitions($referenced_entity->getEntityTypeId(), $referenced_entity->bundle());
     foreach ($form_display->getComponents() as $name => $component) {
-      if (!$definitions[$name]->isDisplayConfigurable('form')) {
+      if ($definitions[$name] && !$definitions[$name]->isDisplayConfigurable('form')) {
         $form_display->removeComponent($name);
       }
     }
@@ -259,8 +259,8 @@ class OverrideEntityForm extends FormBase {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $store_entry['referenced_entity'];
     $form_mode = $store_entry['form_mode'];
+    $value_field_identifier = $store_entry['value_field_identifier'];
 
-    [, , $field_name, $delta] = $this->getExtractedPropertyPath($referenced_entity);
 
     $values = [];
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
@@ -271,7 +271,7 @@ class OverrideEntityForm extends FormBase {
       }
     }
 
-    $selector = "[name=\"{$field_name}[$delta][overwritten_property_map]\"]";
+    $selector = "[data-entity-reference-override-value=\"$value_field_identifier\"]";
 
     $response
       ->addCommand(new InvokeCommand($selector, 'val', [Json::encode($values)]))

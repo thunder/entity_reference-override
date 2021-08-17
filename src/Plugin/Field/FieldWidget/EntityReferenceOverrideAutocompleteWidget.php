@@ -156,15 +156,25 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
     $referenced_entity = $items->get($delta)->entity;
 
+    $parents = $form['#parents'];
+    // Create an ID suffix from the parents to make sure each widget is unique.
+    $id_suffix = $parents ? '-' . implode('-', $parents) : '';
+    $field_widget_id = implode(':', array_filter([$field_name . '-' . $delta, $id_suffix]));
+
     $hash = Crypt::hmacBase64($referenced_entity->entity_reference_override_property_path, Settings::getHashSalt() . $this->privateKey->get());
     $this->tempStore->set($hash, [
       'referenced_entity' => $referenced_entity,
       'form_mode' => $this->getSetting('form_mode'),
+      'value_field_identifier' => $field_widget_id,
     ]);
 
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
       '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
+      '#attributes' => [
+        // This is used to pass the selection from the modal to the widget.
+        'data-entity-reference-override-value' => $field_widget_id,
+      ],
     ];
 
     $modal_title = $this->t('Override %entity_type in context of %bundle "%label"', [
@@ -175,7 +185,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
 
     $element['edit'] = [
       '#type' => 'button',
-      '#name' => 'entity_reference_override-' . $field_name . '-' . $delta,
+      '#name' => $field_name . '-' . $delta . '-entity-reference-override-edit-button' . $id_suffix,
       '#value' => sprintf('Override %s in context of this %s',
         $referenced_entity->getEntityType()->getSingularLabel(),
         $entity->getEntityType()->getSingularLabel()),
