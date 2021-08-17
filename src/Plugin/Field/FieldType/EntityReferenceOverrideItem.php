@@ -58,16 +58,13 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
     if ($name == 'entity' && !empty(parent::__get('entity'))) {
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $entity = clone parent::__get('entity');
-      if (!empty($this->values['overwritten_property_map'])) {
-        $this->overwriteFields($entity, $this->values['overwritten_property_map']);
+      if ($entity->hasTranslation($this->getLangcode())) {
         $translation = $entity->getTranslation($this->getLangcode());
-        $this->overwriteFields($translation, $this->values['overwritten_property_map']);
-
-        $entity->addCacheableDependency($this->getEntity());
-        $entity->entity_reference_override_overwritten = TRUE;
+        $this->overwriteFields($translation, $this->values['overwritten_property_map'] ?? []);
       }
-      $entity->entity_reference_override_property_path = sprintf('%s:%s.%s', $this->getEntity()->getEntityTypeId(), $this->getEntity()->bundle(), $this->getPropertyPath());
-
+      else {
+        $this->overwriteFields($entity, $this->values['overwritten_property_map'] ?? []);
+      }
       return $entity;
     }
     return parent::__get($name);
@@ -97,6 +94,11 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
       }
       $entity->set($field_name, $values);
     }
+    if ($overwritten_property_map) {
+      $entity->addCacheableDependency($this->getEntity());
+      $entity->entity_reference_override_overwritten = TRUE;
+    }
+    $entity->entity_reference_override_property_path = sprintf('%s:%s.%s', $this->getEntity()->getEntityTypeId(), $this->getEntity()->bundle(), $this->getPropertyPath());
   }
 
   /**

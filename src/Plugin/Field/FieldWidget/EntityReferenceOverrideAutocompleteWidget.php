@@ -157,6 +157,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
 
     /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
     $referenced_entity = $items->get($delta)->entity;
+    if ($referenced_entity->hasTranslation($entity->language()->getId())) {
+      $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
+    }
 
     $parents = $form['#parents'];
     // Create an ID suffix from the parents to make sure each widget is unique.

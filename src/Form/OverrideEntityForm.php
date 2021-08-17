@@ -196,7 +196,7 @@ class OverrideEntityForm extends FormBase {
     $form_display = $this->entityDisplayRepository->getFormDisplay($referenced_entity->getEntityTypeId(), $referenced_entity->bundle(), $form_mode);
     $definitions = $this->entityFieldManager->getFieldDefinitions($referenced_entity->getEntityTypeId(), $referenced_entity->bundle());
     foreach ($form_display->getComponents() as $name => $component) {
-      if ($definitions[$name] && !$definitions[$name]->isDisplayConfigurable('form')) {
+      if (!empty($definitions[$name]) && !$definitions[$name]->isDisplayConfigurable('form')) {
         $form_display->removeComponent($name);
       }
     }
