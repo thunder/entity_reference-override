@@ -4,9 +4,11 @@ namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
@@ -208,8 +210,78 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
         ],
       ],
     ];
+    $wrapper_id = $field_name . '-media-library-wrapper' . $delta;
+    $element['update_widget'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Update widget'),
+      '#name' => 'entity_reference_override-update-' . $field_name . '-' . $delta,
+      '#ajax' => [
+        'callback' => [static::class, 'addItems1'],
+        'wrapper' => $wrapper_id,
+      ],
+      '#attributes' => [
+        #'class' => ['js-hide'],
+      ],
+      '#submit' => [[static::class, 'addItems']],
+    ];
 
     return $element;
+  }
+
+  public static function addItems1(array $form, FormStateInterface $form_state) {
+    $response = new AjaxResponse();
+
+    $triggering_element = $form_state->getTriggeringElement();
+    $wrapper_id = $triggering_element['#ajax']['wrapper'];
+
+    $parents = array_slice($triggering_element['#array_parents'], 0, -2);
+    $element = NestedArray::getValue($form, $parents);
+
+    $response->addCommand(new ReplaceCommand("#$wrapper_id", $element));
+
+    return $response;
+  }
+
+  public static function addItems(array $form, FormStateInterface $form_state) {
+
+
+    $button = $form_state->getTriggeringElement();
+    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
+
+
+    // Default to using the current selection if the form is new.
+    $path = $element['#parents'];
+    // We need to use the actual user input, since when #limit_validation_errors
+    // is used, the unvalidated user input is not added to the form state.
+    // @see FormValidator::handleErrorsWithLimitedValidation()
+    $user_input = NestedArray::getValue($form_state->getUserInput(), $path);
+    $values = NestedArray::getValue($form_state->getValues(), $path);
+
+
+
+    $field_state = static::getWidgetState($element['#field_parents'], 'field_images', $form_state);
+
+    foreach ($user_input as $key => $value) {
+      if (!empty($value['overwritten_property_map'])) {
+        $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map']);
+      }
+      else {
+        $values[$key]['overwritten_property_map'] = [];
+      }
+    }
+
+    unset($values['add_more']);
+
+    $field_state['items'] = $values;
+
+    static::setWidgetState($element['#field_parents'], 'field_images', $form_state, $field_state);
+
+
+    #  static::setWidgetState($element['#array_parents'], 'overwritten_property_map', $form_state, $field_state);
+
+    # $form_state->gi
+
+    $form_state->setRebuild();
   }
 
   /**
@@ -271,5 +343,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     }
     return $values;
   }
+
+
 
 }
