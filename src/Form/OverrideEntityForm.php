@@ -263,10 +263,8 @@ class OverrideEntityForm extends FormBase {
     [, , $field_name, $delta] = $this->getExtractedPropertyPath($referenced_entity);
 
     $values = [];
-
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
     $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
-
     foreach ($this->fillEntityWithValues($referenced_entity, $original_entity, $form_mode, $form, $form_state) as $name) {
       if (!$referenced_entity->get($name)->equals($original_entity->get($name))) {
         $values[$name] = $referenced_entity->get($name)->getValue();
