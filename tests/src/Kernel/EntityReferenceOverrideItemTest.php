@@ -18,9 +18,7 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-
     'entity_test',
-    'language',
     'entity_reference_override',
   ];
 
