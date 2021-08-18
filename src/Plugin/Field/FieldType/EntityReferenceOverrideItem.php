@@ -96,9 +96,8 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
     }
     if ($overwritten_property_map) {
       $entity->addCacheableDependency($this->getEntity());
-      $entity->entity_reference_override_overwritten = TRUE;
+      $entity->entity_reference_override = sprintf('%s:%s.%s', $this->getEntity()->getEntityTypeId(), $this->getEntity()->bundle(), $this->getPropertyPath());
     }
-    $entity->entity_reference_override_property_path = sprintf('%s:%s.%s', $this->getEntity()->getEntityTypeId(), $this->getEntity()->bundle(), $this->getPropertyPath());
   }
 
   /**

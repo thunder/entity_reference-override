@@ -164,13 +164,17 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $parents = $form['#parents'];
     // Create an ID suffix from the parents to make sure each widget is unique.
     $id_suffix = $parents ? '-' . implode('-', $parents) : '';
-    $field_widget_id = implode(':', array_filter([$field_name . '-' . $delta, $id_suffix]));
+    $field_widget_id = implode(':', array_filter([
+      $field_name . '-' . $delta,
+      $id_suffix,
+    ]));
 
-    $hash = Crypt::hmacBase64($referenced_entity->entity_reference_override_property_path, Settings::getHashSalt() . $this->privateKey->get());
+    $hash = Crypt::hmacBase64($field_widget_id, Settings::getHashSalt() . $this->privateKey->get());
     $this->tempStore->set($hash, [
       'referenced_entity' => $referenced_entity,
       'form_mode' => $this->getSetting('form_mode'),
       'value_field_identifier' => $field_widget_id,
+      'referencing_entity_type_id' => $entity->getEntityTypeId(),
     ]);
 
     $element['overwritten_property_map'] = [
@@ -213,25 +217,38 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
         ],
       ],
     ];
-    $wrapper_id = $field_name . '-media-library-wrapper' . $delta;
+    $wrapper_id = $field_name . '-entity-reference-override-wrapper' . $delta;
     $element['update_widget'] = [
       '#type' => 'submit',
       '#value' => $this->t('Update widget'),
       '#name' => 'entity_reference_override-update-' . $field_name . '-' . $delta,
       '#ajax' => [
-        'callback' => [static::class, 'addItems1'],
+        'callback' => [static::class, 'updateEntityReferenceOverrideWidget'],
         'wrapper' => $wrapper_id,
       ],
       '#attributes' => [
-        #'class' => ['js-hide'],
+        'class' => ['js-hide'],
+        // This is used to pass the selection from the modal to the widget.
+        'data-entity-reference-override-update' => $field_widget_id,
       ],
-      '#submit' => [[static::class, 'addItems']],
+      '#submit' => [[static::class, 'updateEntityReferenceOverrideFieldState']],
     ];
 
     return $element;
   }
 
-  public static function addItems1(array $form, FormStateInterface $form_state) {
+  /**
+   * Rebuild the widget form.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The response.
+   */
+  public static function updateEntityReferenceOverrideWidget(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
 
     $triggering_element = $form_state->getTriggeringElement();
@@ -245,24 +262,27 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     return $response;
   }
 
-  public static function addItems(array $form, FormStateInterface $form_state) {
-
-
+  /**
+   * Update the field state.
+   *
+   * Read values from user input and pass them into the field state.
+   *
+   * @param array $form
+   *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   */
+  public static function updateEntityReferenceOverrideFieldState(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
+
+    // Go one level up in the form, to the widgets container.
     $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
 
-
-    // Default to using the current selection if the form is new.
-    $path = $element['#parents'];
     // We need to use the actual user input, since when #limit_validation_errors
     // is used, the unvalidated user input is not added to the form state.
     // @see FormValidator::handleErrorsWithLimitedValidation()
-    $user_input = NestedArray::getValue($form_state->getUserInput(), $path);
-    $values = NestedArray::getValue($form_state->getValues(), $path);
-
-
-
-    $field_state = static::getWidgetState($element['#field_parents'], 'field_images', $form_state);
+    $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
+    $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
 
     foreach ($user_input as $key => $value) {
       if (!empty($value['overwritten_property_map'])) {
@@ -275,14 +295,12 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
 
     unset($values['add_more']);
 
+    $field_name = $element['#field_name'];
+    $parents = $element['#field_parents'];
+
+    $field_state = static::getWidgetState($parents, $field_name, $form_state);
     $field_state['items'] = $values;
-
-    static::setWidgetState($element['#field_parents'], 'field_images', $form_state, $field_state);
-
-
-    #  static::setWidgetState($element['#array_parents'], 'overwritten_property_map', $form_state, $field_state);
-
-    # $form_state->gi
+    static::setWidgetState($parents, $field_name, $form_state, $field_state);
 
     $form_state->setRebuild();
   }
@@ -346,7 +364,5 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     }
     return $values;
   }
-
-
 
 }

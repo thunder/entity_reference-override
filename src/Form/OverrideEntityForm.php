@@ -123,6 +123,7 @@ class OverrideEntityForm extends FormBase {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $store_entry['referenced_entity'];
     $form_mode = $store_entry['form_mode'];
+    $referencing_entity_type_id = $store_entry['referencing_entity_type_id'];
 
     $form['#attached']['library'][] = 'entity_reference_override/form';
 
@@ -136,8 +137,7 @@ class OverrideEntityForm extends FormBase {
       '#weight' => -1000,
     ];
 
-    [$referencing_entity_type] = $this->getExtractedPropertyPath($referenced_entity);
-    $referencing_entity_type_label = $this->entityTypeManager->getDefinition($referencing_entity_type)->getSingularLabel();
+    $referencing_entity_type_label = $this->entityTypeManager->getDefinition($referencing_entity_type_id)->getSingularLabel();
     $form['help_text'] = [
       '#type' => 'item',
       '#markup' => $this->t('All changes made in here, only apply to this %entity_type that is referenced in the context of the parent %referencing_entity_type_label.', [
@@ -204,21 +204,6 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
-   * Get extracted property path.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $referenced_entity
-   *   The referenced entity.
-   *
-   * @return array
-   *   Values are entity_type_id, bundle, field, delta.
-   */
-  protected function getExtractedPropertyPath(EntityInterface $referenced_entity) {
-    [$entity_type, $field_name, $delta] = explode('.', $referenced_entity->entity_reference_override_property_path);
-    [$entity_type_id, $bundle] = explode(':', $entity_type);
-    return [$entity_type_id, $bundle, $field_name, $delta];
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {}
@@ -261,7 +246,6 @@ class OverrideEntityForm extends FormBase {
     $form_mode = $store_entry['form_mode'];
     $value_field_identifier = $store_entry['value_field_identifier'];
 
-
     $values = [];
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
     $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
@@ -271,10 +255,9 @@ class OverrideEntityForm extends FormBase {
       }
     }
 
-    $selector = "[data-entity-reference-override-value=\"$value_field_identifier\"]";
-
     $response
-      ->addCommand(new InvokeCommand($selector, 'val', [Json::encode($values)]))
+      ->addCommand(new InvokeCommand("[data-entity-reference-override-value=\"$value_field_identifier\"]", 'val', [Json::encode($values)]))
+      ->addCommand(new InvokeCommand("[data-entity-reference-override-update=\"$value_field_identifier\"]", 'trigger', ['mousedown']))
       ->addCommand(new CloseDialogCommand());
 
     return $response;
