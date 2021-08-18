@@ -5,6 +5,7 @@ namespace Drupal\Tests\entity_reference_override\FunctionalJavascript;
 use Drupal\Core\Entity\Entity\EntityFormMode;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\entity_test\Entity\EntityTestMul;
+use Drupal\entity_test\Entity\EntityTestRev;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
@@ -25,6 +26,7 @@ class FormTest extends WebDriverTestBase {
     'language',
     'text',
     'entity_reference_override',
+    'inline_entity_form',
   ];
 
   /**
@@ -171,6 +173,92 @@ class FormTest extends WebDriverTestBase {
 
     $this->assertSession()->pageTextContains('Original name');
     $this->assertSession()->pageTextContains('Overridden description');
+  }
+
+  /**
+   * Test widget in a IEF subform.
+   */
+  public function testIef() {
+    $field_name = 'field_ief';
+    $entity_type = 'entity_test_rev';
+    FieldStorageConfig::create([
+      'field_name' => $field_name,
+      'type' => 'entity_reference',
+      'entity_type' => $entity_type,
+      'cardinality' => 1,
+      'settings' => [
+        'target_type' => 'entity_test',
+      ],
+    ])->save();
+
+    FieldConfig::create([
+      'field_name' => $field_name,
+      'entity_type' => $entity_type,
+      'bundle' => $entity_type,
+      'label' => $field_name,
+      'settings' => [
+        'handler' => 'default',
+        'handler_settings' => [
+          'target_bundles' => [
+            'entity_test' => 'entity_test',
+          ],
+        ],
+      ],
+    ])->save();
+
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+    $display_repository->getFormDisplay($entity_type, $entity_type)
+      ->setComponent($field_name, [
+        'type' => 'inline_entity_form_simple',
+        'settings' => [
+          'form_mode' => 'default',
+        ],
+      ])
+      ->save();
+
+    $referenced_entity = EntityTestMul::create([
+      'name' => 'Original name',
+      'field_description' => [
+        'value' => 'Original description',
+        'format' => 'plain_text',
+      ],
+    ]);
+    $referenced_entity->save();
+    $entity = EntityTest::create([
+      'name' => 'Ief entity',
+      'field_reference_override' => $referenced_entity,
+    ]);
+    $entity->save();
+
+    $main_entity = EntityTestRev::create([
+      'field_ief' => $entity,
+    ]);
+    $main_entity->save();
+
+    $this->drupalLogin($this->drupalCreateUser([
+      'administer entity_test content',
+      'access content',
+      'view test entity',
+    ]));
+
+    $this->drupalGet($main_entity->toUrl('edit-form'));
+
+    $page = $this->getSession()->getPage();
+
+    $page->pressButton('Override test entity - data table in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $modal = $page->find('css', '.ui-dialog');
+    $modal->fillField('field_description[0][value]', 'Overridden description');
+    $page->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+
+    // Open modal again to check if values persist.
+    $page->pressButton('Override test entity - data table in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()
+      ->fieldValueEquals('field_description[0][value]', 'Overridden description', $modal);
+    $page->find('css', '.ui-dialog button.form-submit')->click();
   }
 
 }

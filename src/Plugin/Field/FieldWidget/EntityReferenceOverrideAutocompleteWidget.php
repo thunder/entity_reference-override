@@ -181,7 +181,6 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#type' => 'hidden',
       '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
       '#attributes' => [
-        // This is used to pass the selection from the modal to the widget.
         'data-entity-reference-override-value' => $field_widget_id,
       ],
     ];
@@ -217,6 +216,8 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
         ],
       ],
     ];
+
+    // The hidden update button functionality was inspired by the media library.
     $wrapper_id = $field_name . '-entity-reference-override-wrapper' . $delta;
     $element['update_widget'] = [
       '#type' => 'submit',
@@ -228,7 +229,6 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       ],
       '#attributes' => [
         'class' => ['js-hide'],
-        // This is used to pass the selection from the modal to the widget.
         'data-entity-reference-override-update' => $field_widget_id,
       ],
       '#submit' => [[static::class, 'updateEntityReferenceOverrideFieldState']],
@@ -289,8 +289,6 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
     $field_state['items'] = $values;
     static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
-
-    $form_state->setRebuild();
   }
 
   /**
