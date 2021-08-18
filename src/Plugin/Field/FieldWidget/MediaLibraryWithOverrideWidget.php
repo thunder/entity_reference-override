@@ -9,22 +9,19 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\media_library\Plugin\Field\FieldWidget\MediaLibraryWidget;
 
 /**
- * Plugin implementation of the 'media_library_edit_widget' widget.
+ * Plugin implementation of the 'media_library_with_override_widget' widget.
  *
  * @FieldWidget(
- *   id = "media_library_edit_widget",
- *   label = @Translation("Media library (with edit)"),
+ *   id = "media_library_with_override_widget",
+ *   label = @Translation("Media library (with override)"),
  *   description = @Translation("Allows you to select items from the media library."),
  *   field_types = {
  *     "entity_reference_override"
  *   },
  *   multiple_values = TRUE,
  * )
- *
- * @internal
- *   Plugin classes are internal.
  */
-class MediaLibraryEditWidget extends MediaLibraryWidget {
+class MediaLibraryWithOverrideWidget extends MediaLibraryWidget {
 
   use EntityReferenceOverrideWidgetTrait {
     formElement as singleFormElement;

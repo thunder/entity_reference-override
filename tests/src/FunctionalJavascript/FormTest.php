@@ -64,7 +64,7 @@ class FormTest extends WebDriverTestBase {
 
     $display_repository->getFormDisplay($entity_type, $entity_type, 'default')
       ->setComponent($field_name, [
-        'type' => 'entity_reference_override_autocomplete',
+        'type' => 'entity_reference_autocomplete_with_override',
         'settings' => [
           'form_mode' => 'overwrite',
         ],

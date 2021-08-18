@@ -5,10 +5,10 @@ namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
 
 /**
- * Plugin implementation of the 'entity_reference_override_autocomplete' widget.
+ * Implementation of the 'entity_reference_autocomplete_with_override' widget.
  *
  * @FieldWidget(
- *   id = "entity_reference_override_autocomplete",
+ *   id = "entity_reference_autocomplete_with_override",
  *   label = @Translation("Autocomplete (with override)"),
  *   description = @Translation("An autocomplete text field with overrides"),
  *   field_types = {
@@ -16,7 +16,7 @@ use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget
  *   }
  * )
  */
-class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompleteWidget {
+class EntityReferenceAutocompleteWithOverrideWidget extends EntityReferenceAutocompleteWidget {
 
   use EntityReferenceOverrideWidgetTrait;
 
