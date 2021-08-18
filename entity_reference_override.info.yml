@@ -3,4 +3,5 @@ description: 'Store context specific overrides for entity reference fields.'
 type: module
 package: User interface
 core_version_requirement: ^8.9 || ^9
-
+test_dependencies:
+  - inline_entity_form:inline_entity_form

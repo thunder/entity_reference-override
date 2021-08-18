@@ -8,5 +8,8 @@
             "name": "Christian Fritsch",
             "email": "christian.fritsch@burda.com"
         }
-    ]
+    ],
+    "require-dev": {
+        "drupal/inline_entity_form": "^1.0"
+    }
 }

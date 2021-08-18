@@ -19,7 +19,6 @@ class EntityReferenceOverrideTestBase extends KernelTestBase {
     'system',
     'field',
     'entity_test',
-    'language',
     'text',
     'entity_reference_override',
   ];
