@@ -173,7 +173,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $this->tempStore->set($hash, [
       'referenced_entity' => $referenced_entity,
       'form_mode' => $this->getSetting('form_mode'),
-      'value_field_identifier' => $field_widget_id,
+      'field_widget_id' => $field_widget_id,
       'referencing_entity_type_id' => $entity->getEntityTypeId(),
     ]);
 
@@ -221,7 +221,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     $element['update_widget'] = [
       '#type' => 'submit',
       '#value' => $this->t('Update widget'),
-      '#name' => 'entity_reference_override-update-' . $field_name . '-' . $delta,
+      '#name' => $field_name . '-' . $delta . '-entity-reference-override-update-button' . $id_suffix,
       '#ajax' => [
         'callback' => [static::class, 'updateEntityReferenceOverrideWidget'],
         'wrapper' => $wrapper_id,
@@ -303,17 +303,6 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
     static::setWidgetState($parents, $field_name, $form_state, $field_state);
 
     $form_state->setRebuild();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function extractFormValues(FieldItemListInterface $items, array $form, FormStateInterface $form_state) {
-    parent::extractFormValues($items, $form, $form_state);
-
-    $field_state = static::getWidgetState($form['#parents'], $this->fieldDefinition->getName(), $form_state);
-    $field_state['items'] = $items->getValue();
-    static::setWidgetState($form['#parents'], $this->fieldDefinition->getName(), $form_state, $field_state);
   }
 
   /**

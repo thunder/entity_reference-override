@@ -156,6 +156,7 @@ class FormTest extends WebDriverTestBase {
     // Set a new different value for the description.
     $modal->fillField('field_description[0][value]', 'Overridden description');
     $page->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
 
     // Open modal again to check if values persist.
     $page->pressButton('Override test entity - data table in context of this test entity');

@@ -244,7 +244,7 @@ class OverrideEntityForm extends FormBase {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $store_entry['referenced_entity'];
     $form_mode = $store_entry['form_mode'];
-    $value_field_identifier = $store_entry['value_field_identifier'];
+    $field_widget_id = $store_entry['field_widget_id'];
 
     $values = [];
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
@@ -256,8 +256,8 @@ class OverrideEntityForm extends FormBase {
     }
 
     $response
-      ->addCommand(new InvokeCommand("[data-entity-reference-override-value=\"$value_field_identifier\"]", 'val', [Json::encode($values)]))
-      ->addCommand(new InvokeCommand("[data-entity-reference-override-update=\"$value_field_identifier\"]", 'trigger', ['mousedown']))
+      ->addCommand(new InvokeCommand("[data-entity-reference-override-value=\"$field_widget_id\"]", 'val', [Json::encode($values)]))
+      ->addCommand(new InvokeCommand("[data-entity-reference-override-update=\"$field_widget_id\"]", 'trigger', ['mousedown']))
       ->addCommand(new CloseDialogCommand());
 
     return $response;
