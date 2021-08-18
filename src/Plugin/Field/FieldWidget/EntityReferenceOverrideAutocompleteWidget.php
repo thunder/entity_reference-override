@@ -275,32 +275,20 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
   public static function updateEntityReferenceOverrideFieldState(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
 
-    // Go one level up in the form, to the widgets container.
     $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
 
-    // We need to use the actual user input, since when #limit_validation_errors
-    // is used, the unvalidated user input is not added to the form state.
-    // @see FormValidator::handleErrorsWithLimitedValidation()
     $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
 
     foreach ($user_input as $key => $value) {
-      if (!empty($value['overwritten_property_map'])) {
-        $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map']);
-      }
-      else {
-        $values[$key]['overwritten_property_map'] = [];
-      }
+      $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map'] ?? '{}');
     }
 
     unset($values['add_more']);
 
-    $field_name = $element['#field_name'];
-    $parents = $element['#field_parents'];
-
-    $field_state = static::getWidgetState($parents, $field_name, $form_state);
+    $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
     $field_state['items'] = $values;
-    static::setWidgetState($parents, $field_name, $form_state, $field_state);
+    static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
 
     $form_state->setRebuild();
   }
