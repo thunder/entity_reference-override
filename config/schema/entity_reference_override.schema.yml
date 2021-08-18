@@ -6,9 +6,17 @@ field.field_settings.entity_reference_override:
   type: field.field_settings.entity_reference
   label: 'Entity reference override field settings'
 
-field.widget.settings.entity_reference_override_autocomplete:
+field.widget.settings.entity_reference_autocomplete_with_override:
   type: field.widget.settings.entity_reference_autocomplete
   label: 'Entity reference override autocomplete display format settings'
+  mapping:
+    form_mode:
+      type: string
+      label: 'Form mode'
+
+field.widget.settings.media_library_with_override_widget:
+  type: field.widget.settings.media_library_widget
+  label: 'Media library with override widget settings'
   mapping:
     form_mode:
       type: string

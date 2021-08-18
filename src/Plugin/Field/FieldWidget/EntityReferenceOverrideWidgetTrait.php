@@ -11,7 +11,6 @@ use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\Core\Field\Plugin\Field\FieldWidget\EntityReferenceAutocompleteWidget;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\PrivateKey;
 use Drupal\Core\Site\Settings;
@@ -20,18 +19,9 @@ use Drupal\entity_reference_override\Form\OverrideEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Plugin implementation of the 'entity_reference_override_autocomplete' widget.
- *
- * @FieldWidget(
- *   id = "entity_reference_override_autocomplete",
- *   label = @Translation("Autocomplete (with override)"),
- *   description = @Translation("An autocomplete text field with overrides"),
- *   field_types = {
- *     "entity_reference_override"
- *   }
- * )
+ * Trait for widgets with entity_reference_override functionality.
  */
-class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompleteWidget {
+trait EntityReferenceOverrideWidgetTrait {
 
   /**
    * The entity display repository service.
@@ -146,7 +136,9 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    $element = parent::formElement($items, $delta, $element, $form, $form_state);
+    if (!$this->handlesMultipleValues()) {
+      $element = parent::formElement($items, $delta, $element, $form, $form_state);
+    }
 
     $entity = $items->getEntity();
     $field_name = $this->fieldDefinition->getName();
