@@ -224,14 +224,14 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
       '#value' => $this->t('Update widget'),
       '#name' => $field_name . '-' . $delta . '-entity-reference-override-update-button' . $id_suffix,
       '#ajax' => [
-        'callback' => [static::class, 'updateEntityReferenceOverrideWidget'],
+        'callback' => [static::class, 'updateOverrideWidget'],
         'wrapper' => $wrapper_id,
       ],
       '#attributes' => [
         'class' => ['js-hide'],
         'data-entity-reference-override-update' => $field_widget_id,
       ],
-      '#submit' => [[static::class, 'updateEntityReferenceOverrideFieldState']],
+      '#submit' => [[static::class, 'updateOverrideFieldState']],
     ];
 
     return $element;
@@ -248,7 +248,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    * @return \Drupal\Core\Ajax\AjaxResponse
    *   The response.
    */
-  public static function updateEntityReferenceOverrideWidget(array $form, FormStateInterface $form_state) {
+  public static function updateOverrideWidget(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
 
     $triggering_element = $form_state->getTriggeringElement();
@@ -272,7 +272,7 @@ class EntityReferenceOverrideAutocompleteWidget extends EntityReferenceAutocompl
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state object.
    */
-  public static function updateEntityReferenceOverrideFieldState(array $form, FormStateInterface $form_state) {
+  public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
 
     $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
