@@ -11,5 +11,12 @@
     ],
     "require-dev": {
         "drupal/inline_entity_form": "^1.0"
+    },
+    "extra": {
+        "patches": {
+            "drupal/core": {
+                "Allow field types extending entity_reference to use field widgets extending media_library": "https://www.drupal.org/files/issues/2020-09-29/core-3173770-2.patch"
+            }
+        }
     }
 }
