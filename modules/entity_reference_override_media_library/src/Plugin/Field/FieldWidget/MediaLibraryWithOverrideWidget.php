@@ -1,11 +1,12 @@
 <?php
 
-namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
+namespace Drupal\entity_reference_override_media_library\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\entity_reference_override\Plugin\Field\FieldWidget\EntityReferenceOverrideWidgetTrait;
 use Drupal\media_library\Plugin\Field\FieldWidget\MediaLibraryWidget;
 
 /**
