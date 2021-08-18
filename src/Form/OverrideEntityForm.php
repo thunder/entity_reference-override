@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -251,7 +252,7 @@ class OverrideEntityForm extends FormBase {
     $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
     foreach ($this->fillEntityWithValues($referenced_entity, $original_entity, $form_mode, $form, $form_state) as $name) {
       if (!$referenced_entity->get($name)->equals($original_entity->get($name))) {
-        $values[$name] = $referenced_entity->get($name)->getValue();
+        $values[$name] = $this->filterChangedProperties($referenced_entity->get($name), $original_entity->get($name));
       }
     }
 
@@ -261,6 +262,32 @@ class OverrideEntityForm extends FormBase {
       ->addCommand(new CloseDialogCommand());
 
     return $response;
+  }
+
+  /**
+   * Filters out the changed properties.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $current_field
+   *   The current field.
+   * @param \Drupal\Core\Field\FieldItemListInterface $original_field
+   *   The original field.
+   *
+   * @return array
+   *   The changed properties.
+   */
+  protected function filterChangedProperties(FieldItemListInterface $current_field, FieldItemListInterface $original_field) {
+    $values = [];
+    foreach ($original_field->getValue() as $delta => $item) {
+      foreach ($item as $key => $value) {
+        if (($current_value = $current_field->getValue()[$delta][$key] ?? NULL) && $current_value !== $value) {
+          if (!isset($values[$delta])) {
+            $values[$delta] = [];
+          }
+          $values[$delta][$key] = $current_value;
+        }
+      }
+    }
+    return $values;
   }
 
   /**
