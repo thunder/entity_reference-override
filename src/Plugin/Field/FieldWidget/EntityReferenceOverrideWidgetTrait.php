@@ -143,7 +143,7 @@ trait EntityReferenceOverrideWidgetTrait {
     $entity = $items->getEntity();
     $field_name = $this->fieldDefinition->getName();
 
-    if ($entity->isNew() || empty($items->referencedEntities()[$delta])) {
+    if (empty($items->referencedEntities()[$delta])) {
       return $element;
     }
 
