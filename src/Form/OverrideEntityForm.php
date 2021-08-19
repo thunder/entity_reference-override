@@ -277,13 +277,18 @@ class OverrideEntityForm extends FormBase {
    */
   protected function filterChangedProperties(FieldItemListInterface $current_field, FieldItemListInterface $original_field) {
     $values = [];
-    foreach ($original_field->getValue() as $delta => $item) {
+    $property_definitions = $original_field->getFieldDefinition()->getFieldStorageDefinition()->getPropertyDefinitions();
+    foreach ($current_field->getValue() as $delta => $item) {
       foreach ($item as $key => $value) {
-        if (($current_value = $current_field->getValue()[$delta][$key] ?? NULL) && $current_value !== $value) {
+        if (!in_array($key, array_keys($property_definitions))) {
+          continue;
+        }
+        $original_value = $original_field->getValue()[$delta][$key] ?? NULL;
+        if ($original_value === NULL || $original_value !== $value) {
           if (!isset($values[$delta])) {
             $values[$delta] = [];
           }
-          $values[$delta][$key] = $current_value;
+          $values[$delta][$key] = $value;
         }
       }
     }
