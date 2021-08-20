@@ -261,11 +261,9 @@ class OverrideEntityForm extends FormBase {
 
       if (!$referenced_entity->get($name)->equals($original_field)) {
         // Filter out values that won't be saved.
-        $property_definitions = $original_field->getFieldDefinition()->getFieldStorageDefinition()->getPropertyDefinitions();
-        $referenced_entity_values = $referenced_entity->get($name)->getValue();
-        array_walk($referenced_entity_values, function (&$values) use ($property_definitions) {
-          $values = array_intersect_key($values, $property_definitions);
-        });
+        $referenced_entity_values = array_map(function ($item) {
+          return $item->toArray();
+        }, $referenced_entity->get($name)->getIterator()->getArrayCopy());
         $values[$name] = DiffArray::diffAssocRecursive($referenced_entity_values, $original_field->getValue());
       }
     }
