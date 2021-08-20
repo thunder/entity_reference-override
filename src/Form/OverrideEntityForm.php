@@ -3,6 +3,8 @@
 namespace Drupal\entity_reference_override\Form;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Component\Utility\DiffArray;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseDialogCommand;
@@ -12,8 +14,6 @@ use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Entity\FieldableEntityInterface;
-use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -250,9 +250,23 @@ class OverrideEntityForm extends FormBase {
     $values = [];
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
     $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
-    foreach ($this->fillEntityWithValues($referenced_entity, $original_entity, $form_mode, $form, $form_state) as $name) {
-      if (!$referenced_entity->get($name)->equals($original_entity->get($name))) {
-        $values[$name] = $this->filterChangedProperties($referenced_entity->get($name), $original_entity->get($name));
+
+    $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
+    $extracted_fields = $form_display->extractFormValues($referenced_entity, $form, $form_state);
+
+    foreach ($extracted_fields as $name) {
+      $original_field = $original_entity->get($name);
+      // Merge in not defined keys of original field.
+      $referenced_entity->set($name, NestedArray::mergeDeepArray([$original_field->getValue(), $referenced_entity->get($name)->getValue()], TRUE));
+
+      if (!$referenced_entity->get($name)->equals($original_field)) {
+        // Filter out values that won't be saved.
+        $property_definitions = $original_field->getFieldDefinition()->getFieldStorageDefinition()->getPropertyDefinitions();
+        $referenced_entity_values = $referenced_entity->get($name)->getValue();
+        array_walk($referenced_entity_values, function (&$values) use ($property_definitions) {
+          $values = array_intersect_key($values, $property_definitions);
+        });
+        $values[$name] = DiffArray::diffAssocRecursive($referenced_entity_values, $original_field->getValue());
       }
     }
 
@@ -262,72 +276,6 @@ class OverrideEntityForm extends FormBase {
       ->addCommand(new CloseDialogCommand());
 
     return $response;
-  }
-
-  /**
-   * Filters out the changed properties.
-   *
-   * @param \Drupal\Core\Field\FieldItemListInterface $current_field
-   *   The current field.
-   * @param \Drupal\Core\Field\FieldItemListInterface $original_field
-   *   The original field.
-   *
-   * @return array
-   *   The changed properties.
-   */
-  protected function filterChangedProperties(FieldItemListInterface $current_field, FieldItemListInterface $original_field) {
-    $values = [];
-    $property_definitions = $original_field->getFieldDefinition()->getFieldStorageDefinition()->getPropertyDefinitions();
-    foreach ($current_field->getValue() as $delta => $item) {
-      foreach ($item as $key => $value) {
-        if (!in_array($key, array_keys($property_definitions))) {
-          continue;
-        }
-        $original_value = $original_field->getValue()[$delta][$key] ?? NULL;
-        if ($original_value === NULL || $original_value !== $value) {
-          if (!isset($values[$delta])) {
-            $values[$delta] = [];
-          }
-          $values[$delta][$key] = $value;
-        }
-      }
-    }
-    return $values;
-  }
-
-  /**
-   * Fills the referenced entity with the values of the submitted form.
-   *
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity
-   *   The referenced entity.
-   * @param \Drupal\Core\Entity\FieldableEntityInterface $original_entity
-   *   The original entity.
-   * @param string $form_mode
-   *   The form mode of the display.
-   * @param array $form
-   *   The form array.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state object.
-   *
-   * @return array
-   *   The processed field items.
-   */
-  protected function fillEntityWithValues(FieldableEntityInterface $referenced_entity, FieldableEntityInterface $original_entity, string $form_mode, array $form, FormStateInterface $form_state) {
-    $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
-    $extracted_fields = $form_display->extractFormValues($referenced_entity, $form, $form_state);
-
-    // Merge in default values.
-    foreach ($extracted_fields as $field) {
-      $original_field_value = $original_entity->get($field)->getValue();
-      $new_field_value = $referenced_entity->get($field)->getValue();
-      $merged_field_value = [];
-      foreach ($new_field_value as $key => $value) {
-        $merged_field_value[$key] = array_merge($original_field_value[$key] ?? [], $value);
-      }
-      $referenced_entity->set($field, $merged_field_value);
-    }
-
-    return $extracted_fields;
   }
 
 }
