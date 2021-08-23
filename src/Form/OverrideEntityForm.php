@@ -16,6 +16,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -229,11 +230,24 @@ class OverrideEntityForm extends FormBase {
   /**
    * The access function.
    *
+   * @param \Drupal\Core\Session\AccountInterface $account
+   *   Run access checks for this account.
+   *
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
    */
-  public static function access() {
-    return AccessResult::allowed();
+  public static function access(AccountInterface $account) {
+    $hash = \Drupal::request()->query->get('hash');
+    /** @var \Drupal\Core\TempStore\PrivateTempStore $temp_store */
+    $temp_store = \Drupal::service('tempstore.private')->get('entity_reference_override');
+    if (!($store_entry = $temp_store->get($hash))) {
+      return AccessResult::forbidden();
+    }
+
+    /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
+    $referenced_entity = $store_entry['referenced_entity'];
+
+    return $referenced_entity->access('view', $account, TRUE);
   }
 
   /**
