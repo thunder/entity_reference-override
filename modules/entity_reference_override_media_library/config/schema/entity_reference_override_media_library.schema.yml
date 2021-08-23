@@ -1,0 +1,7 @@
+field.widget.settings.media_library_with_override_widget:
+  type: field.widget.settings.media_library_widget
+  label: 'Media library with override widget settings'
+  mapping:
+    form_mode:
+      type: string
+      label: 'Form mode'
