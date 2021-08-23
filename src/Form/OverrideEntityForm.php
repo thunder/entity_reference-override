@@ -257,7 +257,10 @@ class OverrideEntityForm extends FormBase {
     foreach ($extracted_fields as $name) {
       $original_field = $original_entity->get($name);
       // Merge in not defined keys of original field.
-      $referenced_entity->set($name, NestedArray::mergeDeepArray([$original_field->getValue(), $referenced_entity->get($name)->getValue()], TRUE));
+      $referenced_entity->set($name, NestedArray::mergeDeepArray([
+        $original_field->getValue(),
+        $referenced_entity->get($name)->getValue(),
+      ], TRUE));
 
       if (!$referenced_entity->get($name)->equals($original_field)) {
         // Filter out values that won't be saved.
