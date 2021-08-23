@@ -221,7 +221,7 @@ class OverrideEntityForm extends FormBase {
   public static function access(AccountInterface $account) {
     $hash = \Drupal::request()->query->get('hash');
     /** @var \Drupal\Core\TempStore\PrivateTempStore $temp_store */
-    $temp_store = \Drupal::service('tempstore.private')->get('entity_reference_revisions');
+    $temp_store = \Drupal::service('tempstore.private')->get('entity_reference_override');
     if (!($store_entry = $temp_store->get($hash))) {
       return AccessResult::forbidden();
     }
@@ -229,7 +229,7 @@ class OverrideEntityForm extends FormBase {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $store_entry['referenced_entity'];
 
-    return $referenced_entity->access('view', $account);
+    return $referenced_entity->access('view', $account, TRUE);
   }
 
   /**
