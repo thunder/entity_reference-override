@@ -261,4 +261,55 @@ class FormTest extends WebDriverTestBase {
     $page->find('css', '.ui-dialog button.form-submit')->click();
   }
 
+  /**
+   * Test with not filled required fields on parent form.
+   */
+  public function testWithFormErrorsOnMainForm() {
+    $referenced_entity = EntityTestMul::create([
+      'name' => 'Original name',
+      'field_description' => [
+        'value' => 'Original description',
+        'format' => 'plain_text',
+      ],
+    ]);
+    $referenced_entity->save();
+    $entity = EntityTest::create([
+      'name' => '',
+      'field_reference_override' => $referenced_entity,
+    ]);
+    $entity->save();
+
+    $this->drupalLogin($this->drupalCreateUser([
+      'administer entity_test content',
+      'access content',
+      'view test entity',
+    ]));
+
+    /** @var \Drupal\field\FieldConfigInterface $field */
+    $field = FieldConfig::loadByName('entity_test', 'entity_test', 'field_test_text');
+    $field->setRequired(TRUE);
+    $field->save();
+
+    $this->drupalGet($entity->toUrl('edit-form'));
+
+    $page = $this->getSession()->getPage();
+
+    // Check that form validation errors are shown.
+    $page->pressButton('Override test entity - data table in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $modal = $page->find('css', '.ui-dialog');
+    $this->assertSession()->elementTextNotContains('css', '.ui-dialog', 'Test text-field field is required.');
+    $modal->fillField('field_description[0][value]', 'Overridden description');
+    $page->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+
+    // Open modal again to check if values persist.
+    $page->pressButton('Override test entity - data table in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->elementTextNotContains('css', '.ui-dialog', 'Test text-field field is required.');
+    $this->assertSession()
+      ->fieldValueEquals('field_description[0][value]', 'Overridden description', $modal);
+    $page->find('css', '.ui-dialog button.form-submit')->click();
+  }
+
 }
