@@ -1,0 +1,3 @@
+services:
+  entity_reference_override:
+    class: Drupal\entity_reference_override\EntityReferenceOverrideService
