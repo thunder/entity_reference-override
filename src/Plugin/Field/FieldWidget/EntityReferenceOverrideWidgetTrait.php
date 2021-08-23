@@ -207,6 +207,8 @@ trait EntityReferenceOverrideWidgetTrait {
           'core/drupal.dialog.ajax',
         ],
       ],
+      // Allow the override modal to be opened even if there are form errors.
+      '#limit_validation_errors' => [],
     ];
 
     // The hidden update button functionality was inspired by the media library.
