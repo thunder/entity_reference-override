@@ -3,8 +3,6 @@
 namespace Drupal\entity_reference_override\Form;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Component\Utility\DiffArray;
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseDialogCommand;
@@ -21,6 +19,7 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\entity_reference_override\EntityReferenceOverrideService;
 
 /**
  * Implements an example form.
@@ -56,6 +55,13 @@ class OverrideEntityForm extends FormBase {
   protected $entityFieldManager;
 
   /**
+   * The entity reference override service.
+   *
+   * @var \Drupal\entity_reference_override\EntityReferenceOverrideService
+   */
+  protected $entityReferenceOverrideService;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -64,6 +70,7 @@ class OverrideEntityForm extends FormBase {
     $form->setPrivateTempStore($container->get('tempstore.private'));
     $form->setEntityTypeManager($container->get('entity_type.manager'));
     $form->setEntityFieldManager($container->get('entity_field.manager'));
+    $form->setEntityReferenceOverrideService($container->get('entity_reference_override'));
     return $form;
   }
 
@@ -105,6 +112,16 @@ class OverrideEntityForm extends FormBase {
    */
   protected function setEntityFieldManager(EntityFieldManagerInterface $entityFieldManager) {
     $this->entityFieldManager = $entityFieldManager;
+  }
+
+  /**
+   * Set the entity reference override service.
+   *
+   * @param \Drupal\entity_reference_override\EntityReferenceOverrideService $entityReferenceOverrideService
+   *   The entity reference override service.
+   */
+  protected function setEntityReferenceOverrideService(EntityReferenceOverrideService $entityReferenceOverrideService) {
+    $this->entityReferenceOverrideService = $entityReferenceOverrideService;
   }
 
   /**
@@ -247,29 +264,13 @@ class OverrideEntityForm extends FormBase {
     $form_mode = $store_entry['form_mode'];
     $field_widget_id = $store_entry['field_widget_id'];
 
-    $values = [];
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
     $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
 
     $form_display = $this->getFormDisplay($referenced_entity, $form_mode);
     $extracted_fields = $form_display->extractFormValues($referenced_entity, $form, $form_state);
 
-    foreach ($extracted_fields as $name) {
-      $original_field = $original_entity->get($name);
-      // Merge in not defined keys of original field.
-      $referenced_entity->set($name, NestedArray::mergeDeepArray([
-        $original_field->getValue(),
-        $referenced_entity->get($name)->getValue(),
-      ], TRUE));
-
-      if (!$referenced_entity->get($name)->equals($original_field)) {
-        // Filter out values that won't be saved.
-        $referenced_entity_values = array_map(function ($item) {
-          return $item->toArray();
-        }, $referenced_entity->get($name)->getIterator()->getArrayCopy());
-        $values[$name] = DiffArray::diffAssocRecursive($referenced_entity_values, $original_field->getValue());
-      }
-    }
+    $values = $this->entityReferenceOverrideService->getOverriddenValues($referenced_entity, $original_entity, $extracted_fields);
 
     $response
       ->addCommand(new InvokeCommand("[data-entity-reference-override-value=\"$field_widget_id\"]", 'val', [Json::encode($values)]))
