@@ -227,6 +227,8 @@ trait EntityReferenceOverrideWidgetTrait {
         'data-entity-reference-override-update' => $field_widget_id,
       ],
       '#submit' => [[static::class, 'updateOverrideFieldState']],
+      // Ensure only the validation for this submit runs.
+      '#limit_validation_errors' => [$field_name . '-' . $delta . '-entity-reference-override-update-button' . $id_suffix],
     ];
 
     return $element;
