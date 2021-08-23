@@ -17,6 +17,7 @@ use Drupal\Core\Site\Settings;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Ajax\MessageCommand;
 
 /**
  * Trait for widgets with entity_reference_override functionality.
@@ -298,6 +299,12 @@ trait EntityReferenceOverrideWidgetTrait {
     $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class);
     $dialog_options = static::overrideFormDialogOptions();
     $button = $form_state->getTriggeringElement();
+
+    if (!OverrideEntityForm::access(\Drupal::currentUser())) {
+      return (new AjaxResponse())
+        ->addCommand(new MessageCommand(t("You don't have access to set overrides for this item."), NULL, ['type' => 'warning']));
+    }
+
     return (new AjaxResponse())
       ->addCommand(new OpenModalDialogCommand($button['#modal_title'], $override_form, $dialog_options));
   }
