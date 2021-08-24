@@ -2,11 +2,9 @@
 
 namespace Drupal\entity_reference_override\Form;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\CloseDialogCommand;
-use Drupal\Core\Ajax\InvokeCommand;
 use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
@@ -276,7 +274,6 @@ class OverrideEntityForm extends FormBase {
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $store_entry['referenced_entity'];
     $form_mode = $store_entry['form_mode'];
-    $field_widget_id = $store_entry['field_widget_id'];
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
     $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
@@ -286,10 +283,10 @@ class OverrideEntityForm extends FormBase {
 
     $values = $this->entityReferenceOverrideService->getOverriddenValues($referenced_entity, $original_entity, $extracted_fields);
 
-    $response
-      ->addCommand(new InvokeCommand("[data-entity-reference-override-value=\"$field_widget_id\"]", 'val', [Json::encode($values)]))
-      ->addCommand(new InvokeCommand("[data-entity-reference-override-update=\"$field_widget_id\"]", 'trigger', ['mousedown']))
-      ->addCommand(new CloseDialogCommand());
+    $store_entry['overwritten_property_map'] = $values;
+    $this->tempStore->set($hash, $store_entry);
+
+    $response->addCommand(new CloseDialogCommand());
 
     return $response;
   }

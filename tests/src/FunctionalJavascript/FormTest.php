@@ -144,7 +144,6 @@ class FormTest extends WebDriverTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
     $page->find('css', '.ui-dialog button.form-submit')->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
-    $this->assertSession()->hiddenFieldValueEquals('field_reference_override[0][overwritten_property_map]', '[]');
 
     // Check that form validation errors are shown.
     $page->pressButton('Override test entity - data table in context of this test entity');

@@ -2,13 +2,9 @@
 
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
-use Drupal\Component\Utility\NestedArray;
-use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
-use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -123,19 +119,6 @@ trait EntityReferenceOverrideWidgetTrait {
   /**
    * {@inheritdoc}
    */
-  public function form(FieldItemListInterface $items, array &$form, FormStateInterface $form_state, $get_delta = NULL) {
-    // Load the items for form rebuilds from the field state.
-    $field_state = static::getWidgetState($form['#parents'], $this->fieldDefinition->getName(), $form_state);
-    if (isset($field_state['items'])) {
-      usort($field_state['items'], [SortArray::class, 'sortByWeightElement']);
-      $items->setValue($field_state['items']);
-    }
-    return parent::form($items, $form, $form_state, $get_delta);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     if (!$this->handlesMultipleValues()) {
       $element = parent::formElement($items, $delta, $element, $form, $form_state);
@@ -157,26 +140,16 @@ trait EntityReferenceOverrideWidgetTrait {
     $parents = $form['#parents'];
     // Create an ID suffix from the parents to make sure each widget is unique.
     $id_suffix = $parents ? '-' . implode('-', $parents) : '';
-    $field_widget_id = implode(':', array_filter([
-      $field_name . '-' . $delta,
-      $id_suffix,
-    ]));
 
-    $hash = Crypt::hmacBase64($field_widget_id, Settings::getHashSalt() . $this->privateKey->get());
-    $this->tempStore->set($hash, [
-      'referenced_entity' => $referenced_entity,
-      'form_mode' => $this->getSetting('form_mode'),
-      'field_widget_id' => $field_widget_id,
-      'referencing_entity_type_id' => $entity->getEntityTypeId(),
-    ]);
-
-    $element['overwritten_property_map'] = [
-      '#type' => 'hidden',
-      '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
-      '#attributes' => [
-        'data-entity-reference-override-value' => $field_widget_id,
-      ],
-    ];
+    $hash = $this->getHash($form, $delta, $referenced_entity->id());
+    if (!$this->tempStore->get($hash)) {
+      $this->tempStore->set($hash, [
+        'referenced_entity' => $referenced_entity,
+        'form_mode' => $this->getSetting('form_mode'),
+        'referencing_entity_type_id' => $entity->getEntityTypeId(),
+        'overwritten_property_map' => $items->get($delta)->overwritten_property_map,
+      ]);
+    }
 
     $modal_title = $this->t('Override %entity_type in context of %bundle "%label"', [
       '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
@@ -214,80 +187,31 @@ trait EntityReferenceOverrideWidgetTrait {
       '#limit_validation_errors' => $limit_validation_errors,
     ];
 
-    // The hidden update button functionality was inspired by the media library.
-    $wrapper_id = $field_name . '-entity-reference-override-wrapper' . $delta;
-    $element['update_widget'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Update widget'),
-      '#name' => $field_name . '-' . $delta . '-entity-reference-override-update-button' . $id_suffix,
-      '#ajax' => [
-        'callback' => [static::class, 'updateOverrideWidget'],
-        'wrapper' => $wrapper_id,
-      ],
-      '#attributes' => [
-        'class' => ['js-hide'],
-        'data-entity-reference-override-update' => $field_widget_id,
-      ],
-      '#submit' => [[static::class, 'updateOverrideFieldState']],
-      // Ensure only the validation for this submit runs.
-      '#limit_validation_errors' => $limit_validation_errors,
-    ];
-
     return $element;
   }
 
   /**
-   * Rebuild the widget form.
+   * Calculate the hash for the temp store key.
    *
    * @param array $form
-   *   The form array.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state object.
+   *   The current form.
+   * @param int $delta
+   *   The field delta.
+   * @param int $target_id
+   *   The target id of the referenced entity.
    *
-   * @return \Drupal\Core\Ajax\AjaxResponse
-   *   The response.
+   * @return string
+   *   The calculated hash.
    */
-  public static function updateOverrideWidget(array $form, FormStateInterface $form_state) {
-    $response = new AjaxResponse();
-
-    $triggering_element = $form_state->getTriggeringElement();
-    $wrapper_id = $triggering_element['#ajax']['wrapper'];
-
-    $parents = array_slice($triggering_element['#array_parents'], 0, -2);
-    $element = NestedArray::getValue($form, $parents);
-
-    $response->addCommand(new ReplaceCommand("#$wrapper_id", $element));
-
-    return $response;
-  }
-
-  /**
-   * Update the field state.
-   *
-   * Read values from user input and pass them into the field state.
-   *
-   * @param array $form
-   *   The form array.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state object.
-   */
-  public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
-    $button = $form_state->getTriggeringElement();
-
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
-
-    $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
-    $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
-
-    foreach ($user_input as $key => $value) {
-      $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map'] ?? '{}');
-    }
-
-    unset($values['add_more']);
-
-    $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
-    $field_state['items'] = $values;
-    static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
+  protected function getHash(array $form, $delta, $target_id) {
+    $parents = $form['#parents'];
+    // Create an ID suffix from the parents to make sure each widget is unique.
+    $id_suffix = $parents ? '-' . implode('-', $parents) : '';
+    $field_widget_id = implode(':', array_filter([
+      $this->fieldDefinition->getName() . '-' . $delta . '-' . $target_id,
+      $id_suffix,
+    ]));
+    return Crypt::hmacBase64($field_widget_id, Settings::getHashSalt() . $this->privateKey->get());
   }
 
   /**
@@ -335,11 +259,9 @@ trait EntityReferenceOverrideWidgetTrait {
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     $values = parent::massageFormValues($values, $form, $form_state);
     foreach ($values as $key => $value) {
-      if (!empty($value['overwritten_property_map'])) {
-        $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map']);
-      }
-      else {
-        $values[$key]['overwritten_property_map'] = [];
+      $hash = $this->getHash($form, $key, $value['target_id']);
+      if (($store_entry = $this->tempStore->get($hash)) && isset($store_entry['overwritten_property_map'])) {
+        $values[$key]['overwritten_property_map'] = $store_entry['overwritten_property_map'];
       }
     }
     return $values;
