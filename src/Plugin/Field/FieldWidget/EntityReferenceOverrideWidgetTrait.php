@@ -137,11 +137,7 @@ trait EntityReferenceOverrideWidgetTrait {
       $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
     }
 
-    $parents = $form['#parents'];
-    // Create an ID suffix from the parents to make sure each widget is unique.
-    $id_suffix = $parents ? '-' . implode('-', $parents) : '';
-
-    $hash = $this->getHash($form, $delta, $referenced_entity->id());
+    $hash = $this->getHash($form, $delta, $items->get($delta)->target_id);
     if (!$this->tempStore->get($hash)) {
       $this->tempStore->set($hash, [
         'referenced_entity' => $referenced_entity,
@@ -150,12 +146,20 @@ trait EntityReferenceOverrideWidgetTrait {
         'overwritten_property_map' => $items->get($delta)->overwritten_property_map,
       ]);
     }
+    $element['hash'] = [
+      '#value' => $hash,
+      '#type' => 'value',
+    ];
 
     $modal_title = $this->t('Override %entity_type in context of %bundle "%label"', [
       '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
       '%bundle' => ucfirst($entity->bundle()),
       '%label' => $entity->label(),
     ]);
+
+    $parents = $form['#parents'];
+    // Create an ID suffix from the parents to make sure each widget is unique.
+    $id_suffix = $parents ? '-' . implode('-', $parents) : '';
 
     $limit_validation_errors = [array_merge($parents, [$field_name])];
     $element['edit'] = [
@@ -259,8 +263,7 @@ trait EntityReferenceOverrideWidgetTrait {
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     $values = parent::massageFormValues($values, $form, $form_state);
     foreach ($values as $key => $value) {
-      $hash = $this->getHash($form, $key, $value['target_id']);
-      if (($store_entry = $this->tempStore->get($hash)) && isset($store_entry['overwritten_property_map'])) {
+      if (($store_entry = $this->tempStore->get($value['hash'])) && isset($store_entry['overwritten_property_map'])) {
         $values[$key]['overwritten_property_map'] = $store_entry['overwritten_property_map'];
       }
     }
