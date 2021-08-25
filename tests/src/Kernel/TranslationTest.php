@@ -132,9 +132,9 @@ class TranslationTest extends EntityReferenceOverrideTestBase {
     $referenced_translation = $translation->field_reference_override->entity->getTranslation('de');
     $this->assertEquals("Main german description", $referenced_translation->field_description->value);
 
-    $translation->field_reference_override->overwritten_property_map = [
+    $translation->field_reference_override->overwritten_property_map = Json::encode([
       'field_description' => "Nice german description!",
-    ];
+    ]);
     $translation->save();
     $referenced_translation = $translation->field_reference_override->entity->getTranslation('de');
     $this->assertEquals("Nice german description!", $referenced_translation->field_description->value);
