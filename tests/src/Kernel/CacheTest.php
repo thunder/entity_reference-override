@@ -6,6 +6,7 @@ use Drupal\entity_test\Entity\EntityTest;
 use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Component\Serialization\Json;
 
 /**
  * Testing caching related use cases.
@@ -88,12 +89,12 @@ class CacheTest extends EntityReferenceOverrideTestBase {
     $render = $view_builder->view($entity->field_reference_override_2->entity);
     $this->assertNotContains('entity_reference_override:', $render['#cache']['keys']);
 
-    $entity->field_reference_override->overwritten_property_map = [
+    $entity->field_reference_override->overwritten_property_map = Json::encode([
       'field_description' => 'Overridden description',
-    ];
-    $entity->field_reference_override_2->get(1)->overwritten_property_map = [
+    ]);
+    $entity->field_reference_override_2->get(1)->overwritten_property_map = Json::encode([
       'field_description' => 'Overridden second description',
-    ];
+    ]);
     $entity->save();
 
     $render = $view_builder->view($entity->field_reference_override->entity);
@@ -119,9 +120,9 @@ class CacheTest extends EntityReferenceOverrideTestBase {
       'name' => 'Test entity',
       'field_reference_override' => [
         'target_id' => $referenced_entity->id(),
-        'overwritten_property_map' => [
+        'overwritten_property_map' => Json::encode([
           'field_description' => 'Overridden description',
-        ],
+        ]),
       ],
       'field_reference_override_2' => [
         'target_id' => $referenced_entity->id(),

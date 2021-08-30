@@ -2,7 +2,6 @@
 
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\SortArray;
@@ -17,6 +16,7 @@ use Drupal\Core\Site\Settings;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Ajax\MessageCommand;
 
 /**
  * Trait for widgets with entity_reference_override functionality.
@@ -143,7 +143,7 @@ trait EntityReferenceOverrideWidgetTrait {
     $entity = $items->getEntity();
     $field_name = $this->fieldDefinition->getName();
 
-    if ($entity->isNew() || empty($items->referencedEntities()[$delta])) {
+    if (empty($items->referencedEntities()[$delta])) {
       return $element;
     }
 
@@ -171,7 +171,7 @@ trait EntityReferenceOverrideWidgetTrait {
 
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
-      '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
+      '#default_value' => $items->get($delta)->overwritten_property_map ?? '{}',
       '#attributes' => [
         'data-entity-reference-override-value' => $field_widget_id,
       ],
@@ -183,6 +183,7 @@ trait EntityReferenceOverrideWidgetTrait {
       '%label' => $entity->label(),
     ]);
 
+    $limit_validation_errors = [array_merge($parents, [$field_name])];
     $element['edit'] = [
       '#type' => 'button',
       '#name' => $field_name . '-' . $delta . '-entity-reference-override-edit-button' . $id_suffix,
@@ -207,6 +208,9 @@ trait EntityReferenceOverrideWidgetTrait {
           'core/drupal.dialog.ajax',
         ],
       ],
+      // Allow the override modal to be opened and saved even if there are form
+      // errors for other fields.
+      '#limit_validation_errors' => $limit_validation_errors,
     ];
 
     // The hidden update button functionality was inspired by the media library.
@@ -224,6 +228,8 @@ trait EntityReferenceOverrideWidgetTrait {
         'data-entity-reference-override-update' => $field_widget_id,
       ],
       '#submit' => [[static::class, 'updateOverrideFieldState']],
+      // Ensure only the validation for this submit runs.
+      '#limit_validation_errors' => $limit_validation_errors,
     ];
 
     return $element;
@@ -273,7 +279,7 @@ trait EntityReferenceOverrideWidgetTrait {
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
 
     foreach ($user_input as $key => $value) {
-      $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map'] ?? '{}');
+      $values[$key]['overwritten_property_map'] = $value['overwritten_property_map'] ?? '{}';
     }
 
     unset($values['add_more']);
@@ -298,6 +304,12 @@ trait EntityReferenceOverrideWidgetTrait {
     $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class);
     $dialog_options = static::overrideFormDialogOptions();
     $button = $form_state->getTriggeringElement();
+
+    if (!OverrideEntityForm::access(\Drupal::currentUser())) {
+      return (new AjaxResponse())
+        ->addCommand(new MessageCommand(t("You don't have access to set overrides for this item."), NULL, ['type' => 'warning']));
+    }
+
     return (new AjaxResponse())
       ->addCommand(new OpenModalDialogCommand($button['#modal_title'], $override_form, $dialog_options));
   }
@@ -314,22 +326,6 @@ trait EntityReferenceOverrideWidgetTrait {
       'maxHeight' => '75%',
       'width' => '75%',
     ];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
-    $values = parent::massageFormValues($values, $form, $form_state);
-    foreach ($values as $key => $value) {
-      if (!empty($value['overwritten_property_map'])) {
-        $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map']);
-      }
-      else {
-        $values[$key]['overwritten_property_map'] = [];
-      }
-    }
-    return $values;
   }
 
 }

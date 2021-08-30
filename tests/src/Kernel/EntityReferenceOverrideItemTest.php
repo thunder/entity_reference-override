@@ -6,6 +6,7 @@ use Drupal\entity_test\Entity\EntityTest;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Tests\media\Kernel\MediaKernelTestBase;
+use Drupal\Component\Serialization\Json;
 
 /**
  * Tests the access of field values with the media item.
@@ -69,10 +70,10 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
     $this->assertEquals(1, $entity->field_media->entity->field_media_file->entity->id());
     $this->assertEquals('test.patch', $entity->field_media->entity->field_media_file->entity->getFilename());
 
-    $entity->field_media->overwritten_property_map = [
+    $entity->field_media->overwritten_property_map = Json::encode([
       'name' => 'Overwritten name',
       'field_media_file' => [['description' => 'Nice description!']],
-    ];
+    ]);
 
     $this->assertEquals('Overwritten name', $entity->field_media->entity->getName());
     $this->assertEquals('Nice description!', $entity->field_media->entity->field_media_file->description);
@@ -131,15 +132,15 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
     $this->assertEquals(3, $entity->field_media->get(1)->entity->field_media_file->entity->id());
     $this->assertEquals('test1.patch', $entity->field_media->get(1)->entity->field_media_file->entity->getFilename());
 
-    $entity->field_media->get(0)->overwritten_property_map = [
+    $entity->field_media->get(0)->overwritten_property_map = Json::encode([
       'name' => 'Overwritten name',
       'field_media_file' => [['description' => 'Nice description!']],
       'field_text' => [1 => ['value' => 'Overwritten Text 2']],
-    ];
-    $entity->field_media->get(1)->overwritten_property_map = [
+    ]);
+    $entity->field_media->get(1)->overwritten_property_map = Json::encode([
       'name' => 'Overwritten name for media 2',
       'field_media_file' => [['description' => 'Nice description for media 2!']],
-    ];
+    ]);
     $entity->save();
 
     $this->assertEquals('Overwritten name', $entity->field_media->get(0)->entity->getName());
@@ -154,10 +155,10 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
     $this->assertEquals(3, $entity->field_media->get(1)->entity->field_media_file->entity->id());
     $this->assertEquals('test1.patch', $entity->field_media->get(1)->entity->field_media_file->entity->getFilename());
 
-    $entity->field_media->get(0)->overwritten_property_map = [
+    $entity->field_media->get(0)->overwritten_property_map = Json::encode([
       'name' => 'Overwritten name for media 2',
       'field_text' => [],
-    ];
+    ]);
     $entity->save();
     $this->assertEmpty($entity->field_media->get(0)->entity->field_text->get(0));
     $this->assertEmpty($entity->field_media->get(0)->entity->field_text->get(1));

@@ -6,7 +6,8 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
-use Drupal\Core\TypedData\MapDataDefinition;
+use Drupal\Component\Serialization\Json;
+use Drupal\Core\TypedData\DataDefinition;
 
 /**
  * Plugin implementation of the 'entity_reference_override' field type.
@@ -29,7 +30,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
     $properties = parent::propertyDefinitions($field_definition);
 
-    $properties['overwritten_property_map'] = MapDataDefinition::create()
+    $properties['overwritten_property_map'] = DataDefinition::create('string')
       ->setLabel(t('Overwritten property map'));
 
     return $properties;
@@ -43,9 +44,8 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
 
     $schema['columns']['overwritten_property_map'] = [
       'description' => 'A map to overwrite entity data per instance.',
-      'type' => 'blob',
+      'type' => 'text',
       'size' => 'big',
-      'serialize' => TRUE,
     ];
 
     return $schema;
@@ -56,14 +56,17 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
    */
   public function __get($name) {
     if ($name == 'entity' && !empty(parent::__get('entity'))) {
+
+      $map = Json::decode($this->values['overwritten_property_map'] ?? '{}');
+
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $entity = clone parent::__get('entity');
       if ($entity->hasTranslation($this->getLangcode())) {
         $translation = $entity->getTranslation($this->getLangcode());
-        $this->overwriteFields($translation, $this->values['overwritten_property_map'] ?? []);
+        $this->overwriteFields($translation, $map);
       }
       else {
-        $this->overwriteFields($entity, $this->values['overwritten_property_map'] ?? []);
+        $this->overwriteFields($entity, $map);
       }
       return $entity;
     }
@@ -97,16 +100,6 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
     if ($overwritten_property_map) {
       $entity->addCacheableDependency($this->getEntity());
       $entity->entity_reference_override = sprintf('%s:%s.%s', $this->getEntity()->getEntityTypeId(), $this->getEntity()->bundle(), $this->getPropertyPath());
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function preSave() {
-    parent::preSave();
-    if (empty($this->values['overwritten_property_map'])) {
-      $this->values['overwritten_property_map'] = [];
     }
   }
 
