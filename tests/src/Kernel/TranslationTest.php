@@ -7,6 +7,7 @@ use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\Component\Serialization\Json;
 
 /**
  * Testing translation related use cases.
@@ -74,18 +75,18 @@ class TranslationTest extends EntityReferenceOverrideTestBase {
     $entity->addTranslation('de', $entity->toArray());
     $entity->save();
 
-    $entity->field_reference_override->overwritten_property_map = [
+    $entity->field_reference_override->overwritten_property_map = Json::encode([
       'field_description' => "Nice english description!",
-    ];
+    ]);
 
     $this->assertEquals("Nice english description!", $entity->field_reference_override->entity->field_description->value);
 
     $translation = $entity->getTranslation('de');
     $this->assertEquals("Main description", $translation->field_reference_override->entity->field_description->value);
 
-    $translation->field_reference_override->overwritten_property_map = [
+    $translation->field_reference_override->overwritten_property_map = Json::encode([
       'field_description' => "Nice german description!",
-    ];
+    ]);
     $translation->save();
     $this->assertEquals("Nice german description!", $translation->field_reference_override->entity->field_description->value);
   }
@@ -120,9 +121,9 @@ class TranslationTest extends EntityReferenceOverrideTestBase {
     $entity->addTranslation('de', $entity->toArray());
     $entity->save();
 
-    $entity->field_reference_override->overwritten_property_map = [
+    $entity->field_reference_override->overwritten_property_map = Json::encode([
       'field_description' => "Nice english description!",
-    ];
+    ]);
 
     $this->assertEquals("Nice english description!", $entity->field_reference_override->entity->field_description->value);
 
@@ -131,9 +132,9 @@ class TranslationTest extends EntityReferenceOverrideTestBase {
     $referenced_translation = $translation->field_reference_override->entity->getTranslation('de');
     $this->assertEquals("Main german description", $referenced_translation->field_description->value);
 
-    $translation->field_reference_override->overwritten_property_map = [
+    $translation->field_reference_override->overwritten_property_map = Json::encode([
       'field_description' => "Nice german description!",
-    ];
+    ]);
     $translation->save();
     $referenced_translation = $translation->field_reference_override->entity->getTranslation('de');
     $this->assertEquals("Nice german description!", $referenced_translation->field_description->value);

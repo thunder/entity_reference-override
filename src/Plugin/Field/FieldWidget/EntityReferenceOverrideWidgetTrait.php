@@ -2,7 +2,6 @@
 
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Component\Utility\SortArray;
@@ -172,7 +171,7 @@ trait EntityReferenceOverrideWidgetTrait {
 
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
-      '#default_value' => Json::encode($items->get($delta)->overwritten_property_map),
+      '#default_value' => $items->get($delta)->overwritten_property_map ?? '{}',
       '#attributes' => [
         'data-entity-reference-override-value' => $field_widget_id,
       ],
@@ -280,7 +279,7 @@ trait EntityReferenceOverrideWidgetTrait {
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
 
     foreach ($user_input as $key => $value) {
-      $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map'] ?? '{}');
+      $values[$key]['overwritten_property_map'] = $value['overwritten_property_map'] ?? '{}';
     }
 
     unset($values['add_more']);
@@ -327,22 +326,6 @@ trait EntityReferenceOverrideWidgetTrait {
       'maxHeight' => '75%',
       'width' => '75%',
     ];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
-    $values = parent::massageFormValues($values, $form, $form_state);
-    foreach ($values as $key => $value) {
-      if (!empty($value['overwritten_property_map'])) {
-        $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map']);
-      }
-      else {
-        $values[$key]['overwritten_property_map'] = [];
-      }
-    }
-    return $values;
   }
 
 }

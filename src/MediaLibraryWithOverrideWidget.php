@@ -2,7 +2,6 @@
 
 namespace Drupal\entity_reference_override;
 
-use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -52,7 +51,7 @@ class MediaLibraryWithOverrideWidget extends MediaLibraryWidget {
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
 
     foreach ($user_input as $key => $value) {
-      $values[$key]['overwritten_property_map'] = Json::decode($value['overwritten_property_map'] ?? '{}');
+      $values[$key]['overwritten_property_map'] = $value['overwritten_property_map'] ?? '{}';
     }
 
     unset($values['add_more']);
