@@ -12,7 +12,8 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * This plugin will only be made available if the media library module is
  * installed. This class will be replaced with
- * \Drupal\entity_reference_override\MediaLibraryWithOverrideWidget.
+ * \Drupal\entity_reference_override\MediaLibraryWithOverrideWidget in
+ * entity_reference_override_field_widget_info_alter().
  *
  * @FieldWidget(
  *   id = "media_library_with_override_widget",
@@ -25,6 +26,7 @@ use Drupal\Core\Form\FormStateInterface;
  * )
  *
  * @see \Drupal\entity_reference_override\MediaLibraryWithOverrideWidget
+ * @see entity_reference_override_field_widget_info_alter()
  */
 class PlaceholderForMediaLibraryWithOverrideWidget extends WidgetBase {
 
