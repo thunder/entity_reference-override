@@ -98,17 +98,18 @@ class MigrateCommands extends DrushCommands {
   /**
    * Migrates an entity_reference field to entity_reference_override.
    *
-   * @usage drush entity_reference_override:migrate
-   *   Migrates an entity_reference field to entity_reference_override.
+   * @param string $entity_type_id
+   *   The entity type ID.
+   * @param string $field_name
+   *   The field name.
    *
    * @command entity_reference_override:migrate
+   *
+   * @usage drush entity_reference_override:migrate
+   *   Migrates an entity_reference field to entity_reference_override.
    */
-  public function migrate() {
-
-    $property_path = 'node.field_media';
-    list($entity_type_id, $field_name) = explode('.', $property_path);
-
-    $field_storage_config = $this->configFactory->getEditable('field.storage.' . $property_path);
+  public function migrate($entity_type_id, $field_name) {
+    $field_storage_config = $this->configFactory->getEditable("field.storage.$entity_type_id.$field_name");
 
     if ($field_storage_config->get('type') !== 'entity_reference') {
       $this->io()->error(\dt('Not an entity reference field'));
@@ -146,7 +147,7 @@ class MigrateCommands extends DrushCommands {
 
     $field_map = $this->entityFieldManager->getFieldMapByFieldType('entity_reference')[$entity_type_id][$field_name];
     foreach ($field_map['bundles'] as $bundle) {
-      $field_config = $this->configFactory->getEditable('field.field.' . $bundle . '.' . $property_path);
+      $field_config = $this->configFactory->getEditable("field.field.$bundle.$entity_type_id.$field_name");
       $field_config->set('field_type', 'entity_reference_override');
       $field_config->save();
 
