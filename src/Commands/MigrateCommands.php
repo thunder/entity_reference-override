@@ -3,7 +3,6 @@
 namespace Drupal\entity_reference_override\Commands;
 
 use Drush\Commands\DrushCommands;
-use Drupal\Core\KeyValueStore\KeyValueFactoryInterface;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Entity\FieldConfig;
 
@@ -50,8 +49,8 @@ class MigrateCommands extends DrushCommands {
       'size' => 'big',
       'serialize' => TRUE,
     ];
-    $database->schema()->addField($entity_type_id . '__' . $field_name, 'overwritten_property_map', $schema_spec);
-    $database->schema()->addField($entity_type_id . '_revision__' . $field_name, 'overwritten_property_map', $schema_spec);
+    $database->schema()->addField($entity_type_id . '__' . $field_name, $field_name . '_overwritten_property_map', $schema_spec);
+    $database->schema()->addField($entity_type_id . '_revision__' . $field_name, $field_name . '_overwritten_property_map', $schema_spec);
 
     $store = $keyValue->get("entity.storage_schema.sql");
     $data = $store->get("$entity_type_id.field_schema_data.$field_name");
@@ -68,13 +67,9 @@ class MigrateCommands extends DrushCommands {
     $field_storage_config->set('type', 'entity_reference_override');
     $field_storage_config->save(TRUE);
 
+    FieldStorageConfig::loadByName($entity_type_id, $field_name)->calculateDependencies()->save();
 
-    $st = FieldStorageConfig::loadByName($entity_type_id, $field_name);
-    $st->calculateDependencies();
-    $st->save();
-    return;
-
-    $field_map = $entityFieldManager->getFieldMapByFieldType('entity_reference')[$field_name];
+    $field_map = $entityFieldManager->getFieldMapByFieldType('entity_reference')[$entity_type_id][$field_name];
     foreach ($field_map['bundles'] as $bundle) {
       $field_config = $configFactory->getEditable('field.field.' . $bundle . '.' . $property_path);
       $field_config->set('field_type', 'entity_reference_override');
@@ -82,11 +77,6 @@ class MigrateCommands extends DrushCommands {
 
       FieldConfig::loadByName($entity_type_id, $bundle, $field_name)->calculateDependencies()->save();
     }
-
-
-
-
-
 
     $this->io()->success(\dt('Migration complete.'));
   }
