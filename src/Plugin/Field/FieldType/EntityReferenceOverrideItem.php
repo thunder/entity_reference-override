@@ -44,7 +44,7 @@ class EntityReferenceOverrideItem extends EntityReferenceItem {
 
     $schema['columns']['overwritten_property_map'] = [
       'description' => 'A map to overwrite entity data per instance.',
-      'type' => 'blob',
+      'type' => 'text',
       'size' => 'big',
     ];
 
