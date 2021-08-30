@@ -1,0 +1,5 @@
+services:
+  entity_reference_override_migrate.commands:
+    class: Drupal\entity_reference_override\Commands\MigrateCommands
+    tags:
+      - { name: drush.command }
