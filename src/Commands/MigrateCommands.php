@@ -10,6 +10,8 @@ use Drupal\Core\KeyValueStore\KeyValueFactoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityLastInstalledSchemaRepositoryInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
+use Drupal\Core\Field\WidgetPluginManager;
 
 /**
  * Drush commands for entity_reference_override.
@@ -52,6 +54,20 @@ class MigrateCommands extends DrushCommands {
   protected $entityLastInstalledSchemaRepository;
 
   /**
+   * The entity display repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   */
+  protected $entityDisplayRepository;
+
+  /**
+   * The widget plugin manager.
+   *
+   * @var \Drupal\Core\Field\WidgetPluginManager
+   */
+  protected $widgetPluginManager;
+
+  /**
    * Constructor.
    *
    * @param \Drupal\Core\Database\Connection $database
@@ -64,13 +80,19 @@ class MigrateCommands extends DrushCommands {
    *   The entity field manager service.
    * @param \Drupal\Core\Entity\EntityLastInstalledSchemaRepositoryInterface $entityLastInstalledSchemaRepository
    *   The entity last installed schema repository service.
+   * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entityDisplayRepository
+   *   The entity display repository service.
+   * @param \Drupal\Core\Field\WidgetPluginManager $widgetPluginManager
+   *   The widget plugin manager.
    */
-  public function __construct(Connection $database, ConfigFactoryInterface $configFactory, KeyValueFactoryInterface $keyValue, EntityFieldManagerInterface $entityFieldManager, EntityLastInstalledSchemaRepositoryInterface $entityLastInstalledSchemaRepository) {
+  public function __construct(Connection $database, ConfigFactoryInterface $configFactory, KeyValueFactoryInterface $keyValue, EntityFieldManagerInterface $entityFieldManager, EntityLastInstalledSchemaRepositoryInterface $entityLastInstalledSchemaRepository, EntityDisplayRepositoryInterface $entityDisplayRepository, WidgetPluginManager $widgetPluginManager) {
     $this->database = $database;
     $this->configFactory = $configFactory;
     $this->keyValue = $keyValue;
     $this->entityFieldManager = $entityFieldManager;
     $this->entityLastInstalledSchemaRepository = $entityLastInstalledSchemaRepository;
+    $this->entityDisplayRepository = $entityDisplayRepository;
+    $this->widgetPluginManager = $widgetPluginManager;
   }
 
   /**
@@ -119,12 +141,8 @@ class MigrateCommands extends DrushCommands {
 
     FieldStorageConfig::loadByName($entity_type_id, $field_name)->calculateDependencies()->save();
 
-    /** @var \Drupal\Core\Entity\EntityDisplayRepository $entityDisplayRepository */
-    $entityDisplayRepository = \Drupal::service('entity_display.repository');
-
     // Use the default widget and settings.
-    $component = \Drupal::service('plugin.manager.field.widget')
-      ->prepareConfiguration('entity_reference_override', []);
+    $component = $this->widgetPluginManager->prepareConfiguration('entity_reference_override', []);
 
     $field_map = $this->entityFieldManager->getFieldMapByFieldType('entity_reference')[$entity_type_id][$field_name];
     foreach ($field_map['bundles'] as $bundle) {
@@ -134,9 +152,9 @@ class MigrateCommands extends DrushCommands {
 
       FieldConfig::loadByName($entity_type_id, $bundle, $field_name)->calculateDependencies()->save();
 
-      $form_modes = $entityDisplayRepository->getFormModeOptionsByBundle($entity_type_id, $bundle);
+      $form_modes = $this->entityDisplayRepository->getFormModeOptionsByBundle($entity_type_id, $bundle);
       foreach (array_keys($form_modes) as $form_mode) {
-        $form_display = $entityDisplayRepository->getFormDisplay($entity_type_id, $bundle, $form_mode);
+        $form_display = $this->entityDisplayRepository->getFormDisplay($entity_type_id, $bundle, $form_mode);
         if ($form_display->getComponent($field_name)) {
           $form_display->setComponent($field_name, $component);
           $form_display->save();
