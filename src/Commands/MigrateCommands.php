@@ -45,10 +45,10 @@ class MigrateCommands extends DrushCommands {
 
     $schema_spec = [
       'description' => 'A map to overwrite entity data per instance.',
-      'type' => 'blob',
+      'type' => 'text',
       'size' => 'big',
-      'serialize' => TRUE,
     ];
+
     $database->schema()->addField($entity_type_id . '__' . $field_name, $field_name . '_overwritten_property_map', $schema_spec);
     $database->schema()->addField($entity_type_id . '_revision__' . $field_name, $field_name . '_overwritten_property_map', $schema_spec);
 
