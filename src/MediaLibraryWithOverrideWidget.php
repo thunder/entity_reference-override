@@ -42,21 +42,8 @@ class MediaLibraryWithOverrideWidget extends MediaLibraryWidget {
   /**
    * {@inheritdoc}
    */
-  public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
-    $button = $form_state->getTriggeringElement();
-    $delta = array_slice($button['#array_parents'], -2, 1)[0];
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -1));
-
-    $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
-    $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
-
-    $values['overwritten_property_map'] = $user_input['overwritten_property_map'] ?? '{}';
-
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -3));
-
-    $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
-    $field_state['items'][$delta] = $values;
-    static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
+  protected static function getFieldStateElementDepth(): int {
+    return -3;
   }
 
 }

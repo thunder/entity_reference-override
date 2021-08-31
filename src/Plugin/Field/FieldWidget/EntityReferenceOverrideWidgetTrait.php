@@ -270,24 +270,33 @@ trait EntityReferenceOverrideWidgetTrait {
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state object.
    */
+
   public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
-
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
+    $delta = array_slice($button['#array_parents'], -2, 1)[0];
+    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -1));
 
     $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
     $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
 
-    foreach ($user_input as $key => $value) {
-      $values[$key]['overwritten_property_map'] = $value['overwritten_property_map'] ?? '{}';
-    }
+    $values['overwritten_property_map'] = $user_input['overwritten_property_map'] ?? '{}';
 
-    unset($values['add_more']);
+    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, static::getFieldStateElementDepth()));
 
     $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
-    $field_state['items'] = $values;
+    $field_state['items'][$delta] = $values;
     static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
   }
+
+  /**
+   * Gets the field state element depth.
+   *
+   * Used in updateOverrideFieldState() to set the widget values so the
+   * overrides are set on the referenced entity.
+   *
+   * @return int
+   */
+  abstract protected static function getFieldStateElementDepth(): int;
 
   /**
    * Opens the override form.
