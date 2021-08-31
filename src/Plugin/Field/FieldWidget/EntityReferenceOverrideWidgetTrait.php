@@ -280,7 +280,7 @@ trait EntityReferenceOverrideWidgetTrait {
     $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
 
     $delta = array_slice($button['#array_parents'], -2, 1)[0];
-    $field_state['items'][$delta]['overwritten_property_map'] =  $user_input['overwritten_property_map'] ?? '{}';
+    $field_state['items'][$delta]['overwritten_property_map'] = $user_input['overwritten_property_map'] ?? '{}';
     static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
   }
 
