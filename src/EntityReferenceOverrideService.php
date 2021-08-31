@@ -14,6 +14,7 @@ use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Field\WidgetPluginManager;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
  * Service for re-usable functions.
@@ -70,6 +71,13 @@ class EntityReferenceOverrideService {
   protected $widgetPluginManager;
 
   /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * Constructor.
    *
    * @param \Drupal\Core\Database\Connection $database
@@ -86,8 +94,10 @@ class EntityReferenceOverrideService {
    *   The entity display repository service.
    * @param \Drupal\Core\Field\WidgetPluginManager $widgetPluginManager
    *   The widget plugin manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager service.
    */
-  public function __construct(Connection $database, ConfigFactoryInterface $configFactory, KeyValueFactoryInterface $keyValue, EntityFieldManagerInterface $entityFieldManager, EntityLastInstalledSchemaRepositoryInterface $entityLastInstalledSchemaRepository, EntityDisplayRepositoryInterface $entityDisplayRepository, WidgetPluginManager $widgetPluginManager) {
+  public function __construct(Connection $database, ConfigFactoryInterface $configFactory, KeyValueFactoryInterface $keyValue, EntityFieldManagerInterface $entityFieldManager, EntityLastInstalledSchemaRepositoryInterface $entityLastInstalledSchemaRepository, EntityDisplayRepositoryInterface $entityDisplayRepository, WidgetPluginManager $widgetPluginManager, EntityTypeManagerInterface $entityTypeManager) {
     $this->database = $database;
     $this->configFactory = $configFactory;
     $this->keyValue = $keyValue;
@@ -95,6 +105,7 @@ class EntityReferenceOverrideService {
     $this->entityLastInstalledSchemaRepository = $entityLastInstalledSchemaRepository;
     $this->entityDisplayRepository = $entityDisplayRepository;
     $this->widgetPluginManager = $widgetPluginManager;
+    $this->entityTypeManager = $entityTypeManager;
   }
 
   /**
@@ -112,19 +123,26 @@ class EntityReferenceOverrideService {
       throw new \Exception('Not an entity reference field');
     }
 
+    /* @see \Drupal\entity_reference_override\Plugin\Field\FieldType\EntityReferenceOverrideItem::schema() */
     $schema_spec = [
       'description' => 'A map to overwrite entity data per instance.',
       'type' => 'text',
       'size' => 'big',
     ];
 
+    $entity_type_definition = $this->entityTypeManager->getDefinition($entity_type_id);
+
     $this->database->schema()->addField($entity_type_id . '__' . $field_name, $field_name . '_overwritten_property_map', $schema_spec);
-    $this->database->schema()->addField($entity_type_id . '_revision__' . $field_name, $field_name . '_overwritten_property_map', $schema_spec);
+    if ($entity_type_definition->isRevisionable()) {
+      $this->database->schema()->addField($entity_type_id . '_revision__' . $field_name, $field_name . '_overwritten_property_map', $schema_spec);
+    }
 
     $store = $this->keyValue->get("entity.storage_schema.sql");
     $data = $store->get("$entity_type_id.field_schema_data.$field_name");
     $data["{$entity_type_id}__$field_name"]['fields']["{$field_name}_overwritten_property_map"] = $schema_spec;
-    $data["{$entity_type_id}_revision__$field_name"]['fields']["{$field_name}_overwritten_property_map"] = $schema_spec;
+    if ($entity_type_definition->isRevisionable()) {
+      $data["{$entity_type_id}_revision__$field_name"]['fields']["{$field_name}_overwritten_property_map"] = $schema_spec;
+    }
     $store->set("$entity_type_id.field_schema_data.$field_name", $data);
 
     $schema_definitions = $this->entityLastInstalledSchemaRepository->getLastInstalledFieldStorageDefinitions($entity_type_id);
