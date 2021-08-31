@@ -270,7 +270,6 @@ trait EntityReferenceOverrideWidgetTrait {
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state object.
    */
-
   public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
     $delta = array_slice($button['#array_parents'], -2, 1)[0];
@@ -295,6 +294,7 @@ trait EntityReferenceOverrideWidgetTrait {
    * overrides are set on the referenced entity.
    *
    * @return int
+   *   The field state element depth.
    */
   abstract protected static function getFieldStateElementDepth(): int;
 
