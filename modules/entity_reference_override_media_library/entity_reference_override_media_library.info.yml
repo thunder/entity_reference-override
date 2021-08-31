@@ -1,7 +1,0 @@
-name: Entity Reference Override (Media Library Widget)
-type: module
-package: User interface
-core_version_requirement: ^8.9 || ^9
-dependencies:
-  - entity_reference_override:entity_reference_override
-  - drupal:media_library

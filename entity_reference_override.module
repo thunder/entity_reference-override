@@ -25,6 +25,14 @@ function entity_reference_override_field_widget_info_alter(array &$info) {
   $info['entity_reference_autocomplete']['field_types'][] = 'entity_reference_override';
   $info['options_buttons']['field_types'][] = 'entity_reference_override';
   $info['options_select']['field_types'][] = 'entity_reference_override';
+
+  if (\Drupal::moduleHandler()->moduleExists('media_library')) {
+    $info['media_library_with_override_widget']['class'] = '\Drupal\entity_reference_override\MediaLibraryWithOverrideWidget';
+  }
+  else {
+    // The widget is useless without media library so remove it.
+    unset($info['media_library_with_override_widget']);
+  }
 }
 
 /**
