@@ -161,11 +161,11 @@ class EntityReferenceOverrideService {
 
     $field_map = $this->entityFieldManager->getFieldMapByFieldType('entity_reference')[$entity_type_id][$field_name];
     foreach ($field_map['bundles'] as $bundle) {
-      $field_config = $this->configFactory->getEditable("field.field.$bundle.$entity_type_id.$field_name");
+      $field_config = $this->configFactory->getEditable("field.field.$entity_type_id.$bundle.$field_name");
       $field_config->set('field_type', 'entity_reference_override');
       $field_config->save();
 
-      FieldConfig::loadByName($entity_type_id, $bundle, $field_name)->calculateDependencies()->save();
+      FieldConfig::loadByName($entity_type_id, $bundle, $field_name)->calculateDependencies()->save(TRUE);
 
       $form_modes = $this->entityDisplayRepository->getFormModeOptionsByBundle($entity_type_id, $bundle);
       foreach (array_keys($form_modes) as $form_mode) {
