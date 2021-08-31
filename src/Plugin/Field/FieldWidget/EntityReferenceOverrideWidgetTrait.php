@@ -272,18 +272,15 @@ trait EntityReferenceOverrideWidgetTrait {
    */
   public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
-    $delta = array_slice($button['#array_parents'], -2, 1)[0];
+
     $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -1));
-
     $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
-    $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
-
-    $values['overwritten_property_map'] = $user_input['overwritten_property_map'] ?? '{}';
 
     $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, static::getFieldStateElementDepth()));
-
     $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
-    $field_state['items'][$delta] = $values;
+
+    $delta = array_slice($button['#array_parents'], -2, 1)[0];
+    $field_state['items'][$delta]['overwritten_property_map'] =  $user_input['overwritten_property_map'] ?? '{}';
     static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
   }
 
@@ -310,6 +307,10 @@ trait EntityReferenceOverrideWidgetTrait {
    *   The response object.
    */
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
+    // Ensure the widget state is correct when opening the override form. This
+    // fixes things if items have been re-ordered.
+    static::updateOverrideFieldState($form, $form_state);
+
     $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class);
     $dialog_options = static::overrideFormDialogOptions();
     $button = $form_state->getTriggeringElement();
