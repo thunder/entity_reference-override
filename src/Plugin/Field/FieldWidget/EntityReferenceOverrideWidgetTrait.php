@@ -13,7 +13,6 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\PrivateKey;
 use Drupal\Core\Site\Settings;
-use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\entity_reference_override\Form\OverrideEntityForm;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Ajax\MessageCommand;
@@ -31,13 +30,6 @@ trait EntityReferenceOverrideWidgetTrait {
   protected $entityDisplayRepository;
 
   /**
-   * The private temp store service.
-   *
-   * @var \Drupal\Core\TempStore\PrivateTempStore
-   */
-  protected $tempStore;
-
-  /**
    * The private key service.
    *
    * @var \Drupal\Core\PrivateKey
@@ -50,7 +42,6 @@ trait EntityReferenceOverrideWidgetTrait {
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     $widget = parent::create($container, $configuration, $plugin_id, $plugin_definition);
     $widget->setEntityDisplayRepository($container->get('entity_display.repository'));
-    $widget->setPrivateTempStore($container->get('tempstore.private'));
     $widget->setPrivateKey($container->get('private_key'));
     return $widget;
   }
@@ -63,16 +54,6 @@ trait EntityReferenceOverrideWidgetTrait {
    */
   protected function setEntityDisplayRepository(EntityDisplayRepositoryInterface $entityDisplayRepository) {
     $this->entityDisplayRepository = $entityDisplayRepository;
-  }
-
-  /**
-   * Set the temp store service.
-   *
-   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $privateTempStoreFactory
-   *   The temp store service.
-   */
-  protected function setPrivateTempStore(PrivateTempStoreFactory $privateTempStoreFactory) {
-    $this->tempStore = $privateTempStoreFactory->get('entity_reference_override');
   }
 
   /**
@@ -147,28 +128,37 @@ trait EntityReferenceOverrideWidgetTrait {
       return $element;
     }
 
+
+    $parents = $form['#parents'];
+    // Create an ID suffix from the parents to make sure each widget is unique.
+    $id_suffix = $parents ? '-' . implode('-', $parents) : '';
+
+    $button = $form_state->getTriggeringElement();
+    if ($button) {
+      $original_delta = array_slice($button['#array_parents'], -2, 1)[0];
+      $field_widget_id = $form_state->getValue([$field_name, 'selection', $original_delta, 'field_widget_id']);
+      $map = $form_state->getValue([$field_name, 'selection', $original_delta, 'overwritten_property_map']);
+      $items->get($delta)->overwritten_property_map = $map ?? '{}';
+    }
+    if (!isset($field_widget_id) || !$field_widget_id) {
+      $field_widget_id = implode(':', array_filter([
+        $field_name . '-' . uniqid('', TRUE),
+        $id_suffix,
+      ]));
+    }
+
     /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
     $referenced_entity = $items->get($delta)->entity;
     if ($referenced_entity->hasTranslation($entity->language()->getId())) {
       $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
     }
 
-    $parents = $form['#parents'];
-    // Create an ID suffix from the parents to make sure each widget is unique.
-    $id_suffix = $parents ? '-' . implode('-', $parents) : '';
-    $field_widget_id = implode(':', array_filter([
-      $field_name . '-' . $delta,
-      $id_suffix,
-    ]));
+    $element['field_widget_id'] = [
+      '#type' => 'hidden',
+      '#default_value' => $field_widget_id,
+    ];
 
     $hash = Crypt::hmacBase64($field_widget_id, Settings::getHashSalt() . $this->privateKey->get());
-    $this->tempStore->set($hash, [
-      'referenced_entity' => $referenced_entity,
-      'form_mode' => $this->getSetting('form_mode'),
-      'field_widget_id' => $field_widget_id,
-      'referencing_entity_type_id' => $entity->getEntityTypeId(),
-    ]);
-
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
       '#default_value' => $items->get($delta)->overwritten_property_map ?? '{}',
@@ -197,11 +187,6 @@ trait EntityReferenceOverrideWidgetTrait {
           'type' => 'throbber',
           'message' => $this->t('Opening override form.'),
         ],
-        'options' => [
-          'query' => [
-            'hash' => $hash,
-          ],
-        ],
       ],
       '#attached' => [
         'library' => [
@@ -211,25 +196,13 @@ trait EntityReferenceOverrideWidgetTrait {
       // Allow the override modal to be opened and saved even if there are form
       // errors for other fields.
       '#limit_validation_errors' => $limit_validation_errors,
-    ];
-
-    // The hidden update button functionality was inspired by the media library.
-    $wrapper_id = $field_name . '-entity-reference-override-wrapper' . $delta;
-    $element['update_widget'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Update widget'),
-      '#name' => $field_name . '-' . $delta . '-entity-reference-override-update-button' . $id_suffix,
-      '#ajax' => [
-        'callback' => [static::class, 'updateOverrideWidget'],
-        'wrapper' => $wrapper_id,
-      ],
-      '#attributes' => [
-        'class' => ['js-hide'],
-        'data-entity-reference-override-update' => $field_widget_id,
-      ],
-      '#submit' => [[static::class, 'updateOverrideFieldState']],
-      // Ensure only the validation for this submit runs.
-      '#limit_validation_errors' => $limit_validation_errors,
+      '#entity_reference_override' => [
+        '#hash' => $hash,
+        '#referenced_entity' => $referenced_entity,
+        '#form_mode' => $this->getSetting('form_mode'),
+        '#field_widget_id' => $field_widget_id,
+        '#referencing_entity_type_id' => $entity->getEntityTypeId(),
+      ]
     ];
 
     return $element;
@@ -261,30 +234,6 @@ trait EntityReferenceOverrideWidgetTrait {
   }
 
   /**
-   * Update the field state.
-   *
-   * Read values from user input and pass them into the field state.
-   *
-   * @param array $form
-   *   The form array.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   The form state object.
-   */
-  public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
-    $button = $form_state->getTriggeringElement();
-
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -1));
-    $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
-
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, static::getFieldStateElementDepth()));
-    $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
-
-    $delta = array_slice($button['#array_parents'], -2, 1)[0];
-    $field_state['items'][$delta]['overwritten_property_map'] = $user_input['overwritten_property_map'] ?? '{}';
-    static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
-  }
-
-  /**
    * Gets the field state element depth.
    *
    * Used in updateOverrideFieldState() to set the widget values so the
@@ -307,13 +256,9 @@ trait EntityReferenceOverrideWidgetTrait {
    *   The response object.
    */
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
-    // Ensure the widget state is correct when opening the override form. This
-    // fixes things if items have been re-ordered.
-    static::updateOverrideFieldState($form, $form_state);
-
-    $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class);
-    $dialog_options = static::overrideFormDialogOptions();
     $button = $form_state->getTriggeringElement();
+    $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class, $button['#entity_reference_override']);
+    $dialog_options = static::overrideFormDialogOptions();
 
     if (!OverrideEntityForm::access(\Drupal::currentUser())) {
       return (new AjaxResponse())
