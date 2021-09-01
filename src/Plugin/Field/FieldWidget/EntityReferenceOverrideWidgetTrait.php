@@ -2,7 +2,6 @@
 
 namespace Drupal\entity_reference_override\Plugin\Field\FieldWidget;
 
-use Drupal\Component\Utility\SortArray;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
@@ -163,10 +162,10 @@ trait EntityReferenceOverrideWidgetTrait {
       // errors for other fields.
       '#limit_validation_errors' => $limit_validation_errors,
       '#entity_reference_override' => [
-        '#referenced_entity' => $referenced_entity,
-        '#form_mode' => $this->getSetting('form_mode'),
-        '#field_widget_id' => $field_widget_id,
-        '#referencing_entity_type_id' => $entity->getEntityTypeId(),
+        'referenced_entity' => $referenced_entity,
+        'form_mode' => $this->getSetting('form_mode'),
+        'field_widget_id' => $field_widget_id,
+        'referencing_entity_type_id' => $entity->getEntityTypeId(),
       ],
     ];
 

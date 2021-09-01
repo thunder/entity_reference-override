@@ -162,13 +162,13 @@ class OverrideEntityForm extends FormBase {
       $store_entry = $this->tempStore->get($hash);
     }
     else {
-      $hash = Crypt::hmacBase64($store_entry['#field_widget_id'], Settings::getHashSalt() . $this->privateKey->get());
+      $hash = Crypt::hmacBase64($store_entry['field_widget_id'], Settings::getHashSalt() . $this->privateKey->get());
       $this->tempStore->set($hash, $store_entry);
     }
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $store_entry['#referenced_entity'];
-    $form_mode = $store_entry['#form_mode'];
-    $referencing_entity_type_id = $store_entry['#referencing_entity_type_id'];
+    $referenced_entity = $store_entry['referenced_entity'];
+    $form_mode = $store_entry['form_mode'];
+    $referencing_entity_type_id = $store_entry['referencing_entity_type_id'];
 
     $form['#attached']['library'][] = 'entity_reference_override/form';
 
@@ -271,7 +271,7 @@ class OverrideEntityForm extends FormBase {
     }
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $store_entry['#referenced_entity'];
+    $referenced_entity = $store_entry['referenced_entity'];
 
     return $referenced_entity->access('view', $account, TRUE);
   }
@@ -300,9 +300,9 @@ class OverrideEntityForm extends FormBase {
 
     $store_entry = $this->tempStore->get($hash);
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
-    $referenced_entity = $store_entry['#referenced_entity'];
-    $form_mode = $store_entry['#form_mode'];
-    $field_widget_id = $store_entry['#field_widget_id'];
+    $referenced_entity = $store_entry['referenced_entity'];
+    $form_mode = $store_entry['form_mode'];
+    $field_widget_id = $store_entry['field_widget_id'];
 
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $original_entity */
     $original_entity = $this->entityTypeManager->getStorage($referenced_entity->getEntityTypeId())->load($referenced_entity->id());
