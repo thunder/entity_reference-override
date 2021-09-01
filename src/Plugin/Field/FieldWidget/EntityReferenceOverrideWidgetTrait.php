@@ -95,10 +95,12 @@ trait EntityReferenceOverrideWidgetTrait {
     // Create an ID suffix from the parents to make sure each widget is unique.
     $id_suffix = $parents ? '-' . implode('-', $parents) : '';
 
-    $field_widget_id = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-field-widget' . $id_suffix] ?? NULL;
-    $items->get($delta)->overwritten_property_map = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-map' . $id_suffix] ?? '{}';
+    if ($form_state->getTriggeringElement()) {
+      $field_widget_id = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-field-widget' . $id_suffix] ?? NULL;
+      $items->get($delta)->overwritten_property_map = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-map' . $id_suffix] ?? '{}';
+    }
 
-    if (!$field_widget_id) {
+    if (!isset($field_widget_id) || !$field_widget_id) {
       $field_widget_id = implode(':', array_filter([
         $field_name . '-' . uniqid('', TRUE),
         $id_suffix,
@@ -159,22 +161,12 @@ trait EntityReferenceOverrideWidgetTrait {
         'form_mode' => $this->getSetting('form_mode'),
         'field_widget_id' => $field_widget_id,
         'referencing_entity_type_id' => $entity->getEntityTypeId(),
+        'ajax_commands' => [],
       ],
     ];
 
     return $element;
   }
-
-  /**
-   * Gets the field state element depth.
-   *
-   * Used in updateOverrideFieldState() to set the widget values so the
-   * overrides are set on the referenced entity.
-   *
-   * @return int
-   *   The field state element depth.
-   */
-  abstract protected static function getFieldStateElementDepth(): int;
 
   /**
    * Opens the override form.

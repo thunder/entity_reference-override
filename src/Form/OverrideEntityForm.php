@@ -316,6 +316,10 @@ class OverrideEntityForm extends FormBase {
       ->addCommand(new InvokeCommand("[data-entity-reference-override-value=\"$field_widget_id\"]", 'val', [Json::encode($values)]))
       ->addCommand(new CloseDialogCommand());
 
+    foreach ($store_entry['ajax_commands'] as $command) {
+      $response->addCommand($command);
+    }
+
     return $response;
   }
 

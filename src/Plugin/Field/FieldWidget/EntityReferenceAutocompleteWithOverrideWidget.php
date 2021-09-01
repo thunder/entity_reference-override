@@ -20,11 +20,4 @@ class EntityReferenceAutocompleteWithOverrideWidget extends EntityReferenceAutoc
 
   use EntityReferenceOverrideWidgetTrait;
 
-  /**
-   * {@inheritdoc}
-   */
-  protected static function getFieldStateElementDepth(): int {
-    return -2;
-  }
-
 }

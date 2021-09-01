@@ -6,6 +6,7 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\entity_reference_override\Plugin\Field\FieldWidget\EntityReferenceOverrideWidgetTrait;
 use Drupal\media_library\Plugin\Field\FieldWidget\MediaLibraryWidget;
+use Drupal\Core\Ajax\InvokeCommand;
 
 /**
  * Plugin implementation of the 'media_library_with_override_widget' widget.
@@ -34,15 +35,10 @@ class MediaLibraryWithOverrideWidget extends MediaLibraryWidget {
           'media-library-item__edit',
         ],
       ];
+      $widget_id = $element['media_library_update_widget']['#attributes']['data-media-library-widget-update'];
+      $element['selection'][$delta]['edit']['#entity_reference_override']['ajax_commands'][] = new InvokeCommand("[data-media-library-widget-update=\"$widget_id\"]", 'trigger', ['mousedown']);
     }
     return $element;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected static function getFieldStateElementDepth(): int {
-    return -3;
   }
 
 }
