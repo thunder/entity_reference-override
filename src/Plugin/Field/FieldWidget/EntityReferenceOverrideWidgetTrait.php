@@ -80,19 +80,6 @@ trait EntityReferenceOverrideWidgetTrait {
   /**
    * {@inheritdoc}
    */
-  public function form(FieldItemListInterface $items, array &$form, FormStateInterface $form_state, $get_delta = NULL) {
-    // Load the items for form rebuilds from the field state.
-    $field_state = static::getWidgetState($form['#parents'], $this->fieldDefinition->getName(), $form_state);
-    if (isset($field_state['items'])) {
-      usort($field_state['items'], [SortArray::class, 'sortByWeightElement']);
-      $items->setValue($field_state['items']);
-    }
-    return parent::form($items, $form, $form_state, $get_delta);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     if (!$this->handlesMultipleValues()) {
       $element = parent::formElement($items, $delta, $element, $form, $form_state);
