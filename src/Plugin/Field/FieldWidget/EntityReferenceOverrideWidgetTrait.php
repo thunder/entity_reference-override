@@ -97,13 +97,8 @@ trait EntityReferenceOverrideWidgetTrait {
 
     $button = $form_state->getTriggeringElement();
     if ($button && !empty($button['#entity_reference_override'])) {
-      $button_parents = array_slice($button['#parents'], 0, -1);
-      $field_widget_id = $form_state->getValue(array_merge($button_parents, [
-        'field_widget_id',
-      ]));
-      $overwritten_property_map = $form_state->getValue(array_merge($button_parents, [
-        'overwritten_property_map',
-      ]));
+      $field_widget_id = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-field-widget' . $id_suffix];
+      $overwritten_property_map = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-map' . $id_suffix];
       $items->get($delta)->overwritten_property_map = $overwritten_property_map ?? '{}';
     }
     if (!isset($field_widget_id) || !$field_widget_id) {
@@ -122,10 +117,12 @@ trait EntityReferenceOverrideWidgetTrait {
     $element['field_widget_id'] = [
       '#type' => 'hidden',
       '#default_value' => $field_widget_id,
+      '#name' => $field_name . '-' . $delta . '-entity-reference-override-field-widget' . $id_suffix,
     ];
 
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
+      '#name' => $field_name . '-' . $delta . '-entity-reference-override-map' . $id_suffix,
       '#default_value' => $items->get($delta)->overwritten_property_map ?? '{}',
       '#attributes' => [
         'data-entity-reference-override-value' => $field_widget_id,
