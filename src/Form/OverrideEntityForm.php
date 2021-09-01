@@ -21,6 +21,9 @@ use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\entity_reference_override\EntityReferenceOverrideService;
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Site\Settings;
+use Drupal\Core\PrivateKey;
 
 /**
  * Implements an example form.
@@ -63,6 +66,13 @@ class OverrideEntityForm extends FormBase {
   protected $entityReferenceOverrideService;
 
   /**
+   * The private key service.
+   *
+   * @var \Drupal\Core\PrivateKey
+   */
+  protected $privateKey;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -72,6 +82,7 @@ class OverrideEntityForm extends FormBase {
     $form->setEntityTypeManager($container->get('entity_type.manager'));
     $form->setEntityFieldManager($container->get('entity_field.manager'));
     $form->setEntityReferenceOverrideService($container->get('entity_reference_override'));
+    $form->setPrivateKey($container->get('private_key'));
     return $form;
   }
 
@@ -126,6 +137,16 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
+   * Set the private key service.
+   *
+   * @param \Drupal\Core\PrivateKey $privateKey
+   *   The private key service.
+   */
+  protected function setPrivateKey(PrivateKey $privateKey) {
+    $this->privateKey = $privateKey;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -141,10 +162,8 @@ class OverrideEntityForm extends FormBase {
       $store_entry = $this->tempStore->get($hash);
     }
     else {
-      $hash = $store_entry['#hash'];
-      \Drupal::service('tempstore.private')
-        ->get('entity_reference_override')
-        ->set($hash, $store_entry);
+      $hash = Crypt::hmacBase64($store_entry['#field_widget_id'], Settings::getHashSalt() . $this->privateKey->get());
+      $this->tempStore->set($hash, $store_entry);
     }
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $store_entry['#referenced_entity'];
