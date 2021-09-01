@@ -127,7 +127,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
   /**
    * Test edit form after multiple add items actions.
    */
-  public function testEditFormAfterAddItems() {
+  public function testEditFormAfterSingleAddItems() {
 
     $this->getSession()->getPage()->pressButton('Add media');
     $this->assertSession()->assertWaitOnAjaxRequest();
@@ -146,6 +146,37 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Override 1');
     $this->getSession()->getPage()->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
+    $this->assertSession()
+      ->fieldValueEquals('field_description[0][value]', 'Override 1', $modal);
+  }
+
+  /**
+   * Test edit form after multiple add items actions.
+   */
+  public function testEditFormThenAddAndEditAgain() {
+
+    $this->getSession()->getPage()->pressButton('Add media');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->getSession()->getPage()->checkField('media_library_select_form[0]');
+    $this->assertSession()->elementExists('css', '.ui-dialog-buttonpane')->pressButton('Insert selected');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
+    $modal->fillField('field_description[0][value]', 'Override 1');
+    $this->getSession()->getPage()->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+
+    $this->getSession()->getPage()->pressButton('Add media');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->getSession()->getPage()->checkField('media_library_select_form[1]');
+    $this->assertSession()->elementExists('css', '.ui-dialog-buttonpane')->pressButton('Insert selected');
     $this->assertSession()->assertWaitOnAjaxRequest();
 
     $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');

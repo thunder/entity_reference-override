@@ -95,13 +95,10 @@ trait EntityReferenceOverrideWidgetTrait {
     // Create an ID suffix from the parents to make sure each widget is unique.
     $id_suffix = $parents ? '-' . implode('-', $parents) : '';
 
-    $button = $form_state->getTriggeringElement();
-    if ($button && !empty($button['#entity_reference_override'])) {
-      $field_widget_id = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-field-widget' . $id_suffix];
-      $overwritten_property_map = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-map' . $id_suffix];
-      $items->get($delta)->overwritten_property_map = $overwritten_property_map ?? '{}';
-    }
-    if (!isset($field_widget_id) || !$field_widget_id) {
+    $field_widget_id = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-field-widget' . $id_suffix] ?? NULL;
+    $items->get($delta)->overwritten_property_map = $form_state->getUserInput()[$field_name . '-' . $delta . '-entity-reference-override-map' . $id_suffix] ?? '{}';
+
+    if (!$field_widget_id) {
       $field_widget_id = implode(':', array_filter([
         $field_name . '-' . uniqid('', TRUE),
         $id_suffix,
