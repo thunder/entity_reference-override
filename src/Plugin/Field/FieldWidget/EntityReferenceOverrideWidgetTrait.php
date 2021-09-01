@@ -95,8 +95,7 @@ trait EntityReferenceOverrideWidgetTrait {
     // Create an ID suffix from the parents to make sure each widget is unique.
     $id_suffix = $parents ? '-' . implode('-', $parents) : '';
 
-    $button = $form_state->getTriggeringElement();
-    if ($button) {
+    if ($button = $form_state->getTriggeringElement()) {
       $button_parents = array_slice($button['#parents'], 0, -1);
       $field_widget_id = $form_state->getValue(array_merge($button_parents, [
         'field_widget_id',
@@ -138,7 +137,6 @@ trait EntityReferenceOverrideWidgetTrait {
       '%label' => $entity->label(),
     ]);
 
-    $limit_validation_errors = [array_merge($parents, [$field_name])];
     $element['edit'] = [
       '#type' => 'button',
       '#name' => $field_name . '-' . $delta . '-entity-reference-override-edit-button' . $id_suffix,
@@ -160,7 +158,7 @@ trait EntityReferenceOverrideWidgetTrait {
       ],
       // Allow the override modal to be opened and saved even if there are form
       // errors for other fields.
-      '#limit_validation_errors' => $limit_validation_errors,
+      '#limit_validation_errors' => [array_merge($parents, [$field_name])],
       '#entity_reference_override' => [
         'referenced_entity' => $referenced_entity,
         'form_mode' => $this->getSetting('form_mode'),
