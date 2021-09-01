@@ -95,7 +95,8 @@ trait EntityReferenceOverrideWidgetTrait {
     // Create an ID suffix from the parents to make sure each widget is unique.
     $id_suffix = $parents ? '-' . implode('-', $parents) : '';
 
-    if ($button = $form_state->getTriggeringElement()) {
+    $button = $form_state->getTriggeringElement();
+    if ($button && !empty($button['#entity_reference_override'])) {
       $button_parents = array_slice($button['#parents'], 0, -1);
       $field_widget_id = $form_state->getValue(array_merge($button_parents, [
         'field_widget_id',
