@@ -39,9 +39,11 @@ function entity_reference_override_field_widget_info_alter(array &$info) {
  * Implements hook_field_formatter_info_alter().
  */
 function entity_reference_override_field_formatter_info_alter(array &$info) {
-  $info['entity_reference_entity_view']['field_types'][] = 'entity_reference_override';
-  $info['entity_reference_entity_id']['field_types'][] = 'entity_reference_override';
-  $info['entity_reference_label']['field_types'][] = 'entity_reference_override';
+  foreach ($info as $formatter_id => $formatter) {
+    if (in_array('entity_reference', $formatter['field_types'])) {
+      $info[$formatter_id]['field_types'][] = 'entity_reference_override';
+    }
+  }
 }
 
 /**
