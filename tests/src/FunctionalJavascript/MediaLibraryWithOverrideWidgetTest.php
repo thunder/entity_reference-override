@@ -166,7 +166,9 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
 
     // @todo Remove the return once
     //   https://www.drupal.org/project/drupal/issues/3115054 has been fixed.
-    return;
+    $this->markTestIncomplete(
+      'Remove the return once https://www.drupal.org/project/drupal/issues/3115054 has been fixed.'
+    );
     // This assertion currently fails.
     $this->assertSession()->elementExists('css', 'div[data-media-library-item-delta="1"] + div[data-media-library-item-delta="0"]');
   }
