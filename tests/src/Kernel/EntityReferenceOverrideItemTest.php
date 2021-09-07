@@ -16,6 +16,13 @@ use Drupal\Component\Serialization\Json;
 class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
 
   /**
+   * Type of the reference field.
+   *
+   * @var string
+   */
+  protected $fieldType = 'entity_reference_override';
+
+  /**
    * {@inheritdoc}
    */
   protected static $modules = [
@@ -35,7 +42,7 @@ class EntityReferenceOverrideItemTest extends MediaKernelTestBase {
     $entity_type = 'entity_test';
     FieldStorageConfig::create([
       'field_name' => $field_name,
-      'type' => 'entity_reference_override',
+      'type' => $this->fieldType,
       'entity_type' => $entity_type,
       'cardinality' => -1,
       'settings' => [

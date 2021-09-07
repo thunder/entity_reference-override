@@ -2,37 +2,23 @@
 
 namespace Drupal\Tests\entity_reference_override\FunctionalJavascript;
 
-use Drupal\Core\Entity\Entity\EntityFormMode;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\entity_test\Entity\EntityTestRev;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Form operation tests.
  */
-class FormTest extends WebDriverTestBase {
+class FormTest extends EntityReferenceOverrideTestBase {
 
   /**
    * {@inheritdoc}
    */
   protected static $modules = [
-    'user',
-    'system',
-    'field',
-    'entity_test',
-    'language',
-    'text',
-    'entity_reference_override',
     'inline_entity_form',
   ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -40,71 +26,7 @@ class FormTest extends WebDriverTestBase {
   protected function setUp(): void {
     parent::setUp();
 
-    $field_name = 'field_reference_override';
-    $entity_type = 'entity_test';
-    FieldStorageConfig::create([
-      'field_name' => $field_name,
-      'type' => 'entity_reference_override',
-      'entity_type' => $entity_type,
-      'cardinality' => -1,
-      'settings' => [
-        'target_type' => 'entity_test_mul',
-      ],
-    ])->save();
-
-    FieldConfig::create([
-      'field_name' => $field_name,
-      'entity_type' => $entity_type,
-      'bundle' => $entity_type,
-      'label' => $field_name,
-    ])->save();
-
-    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
-    $display_repository = \Drupal::service('entity_display.repository');
-
-    $display_repository->getFormDisplay($entity_type, $entity_type, 'default')
-      ->setComponent($field_name, [
-        'type' => 'entity_reference_autocomplete_with_override',
-        'settings' => [
-          'form_mode' => 'overwrite',
-        ],
-      ])
-      ->save();
-
-    $display_repository->getViewDisplay($entity_type, $entity_type)
-      ->setComponent($field_name, ['type' => 'entity_reference_entity_view'])
-      ->save();
-
-    $field_name = 'field_description';
-    $entity_type = 'entity_test_mul';
-    FieldStorageConfig::create([
-      'field_name' => $field_name,
-      'type' => 'text_long',
-      'entity_type' => $entity_type,
-      'cardinality' => 1,
-    ])->save();
-
-    FieldConfig::create([
-      'field_name' => $field_name,
-      'entity_type' => $entity_type,
-      'bundle' => $entity_type,
-      'label' => $field_name,
-      'required' => TRUE,
-    ])->save();
-
-    $display_repository->getViewDisplay($entity_type, $entity_type)
-      ->setComponent($field_name)
-      ->save();
-
-    EntityFormMode::create([
-      'id' => $entity_type . '.overwrite',
-      'label' => 'Overwrite',
-      'targetEntityType' => $entity_type,
-    ])->save();
-
-    $display_repository->getFormDisplay($entity_type, $entity_type, 'overwrite')
-      ->setComponent($field_name)
-      ->save();
+    $this->addReferenceOverrideField('entity_test', 'field_reference_override', 'entity_test_mul', 'entity_test_mul', 'entity_reference_autocomplete_with_override');
   }
 
   /**
@@ -144,7 +66,7 @@ class FormTest extends WebDriverTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
     $page->find('css', '.ui-dialog button.form-submit')->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
-    $this->assertSession()->hiddenFieldValueEquals('field_reference_override[0][overwritten_property_map]', '[]');
+    $this->assertSession()->hiddenFieldValueEquals('field_reference_override-0-entity-reference-override-map', '[]');
 
     // Check that form validation errors are shown.
     $page->pressButton('Override test entity - data table in context of this test entity');

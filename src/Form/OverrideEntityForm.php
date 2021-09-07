@@ -21,6 +21,9 @@ use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\entity_reference_override\EntityReferenceOverrideService;
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Site\Settings;
+use Drupal\Core\PrivateKey;
 
 /**
  * Implements an example form.
@@ -63,6 +66,13 @@ class OverrideEntityForm extends FormBase {
   protected $entityReferenceOverrideService;
 
   /**
+   * The private key service.
+   *
+   * @var \Drupal\Core\PrivateKey
+   */
+  protected $privateKey;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
@@ -72,6 +82,7 @@ class OverrideEntityForm extends FormBase {
     $form->setEntityTypeManager($container->get('entity_type.manager'));
     $form->setEntityFieldManager($container->get('entity_field.manager'));
     $form->setEntityReferenceOverrideService($container->get('entity_reference_override'));
+    $form->setPrivateKey($container->get('private_key'));
     return $form;
   }
 
@@ -126,6 +137,16 @@ class OverrideEntityForm extends FormBase {
   }
 
   /**
+   * Set the private key service.
+   *
+   * @param \Drupal\Core\PrivateKey $privateKey
+   *   The private key service.
+   */
+  protected function setPrivateKey(PrivateKey $privateKey) {
+    $this->privateKey = $privateKey;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -135,10 +156,15 @@ class OverrideEntityForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
-    $hash = $this->getRequest()->query->get('hash');
-
-    $store_entry = $this->tempStore->get($hash);
+  public function buildForm(array $form, FormStateInterface $form_state, array $store_entry = []) {
+    if (empty($store_entry)) {
+      $hash = $this->getRequest()->query->get('hash');
+      $store_entry = $this->tempStore->get($hash);
+    }
+    else {
+      $hash = Crypt::hmacBase64($store_entry['field_widget_id'], Settings::getHashSalt() . $this->privateKey->get());
+      $this->tempStore->set($hash, $store_entry);
+    }
     /** @var \Drupal\Core\Entity\FieldableEntityInterface $referenced_entity */
     $referenced_entity = $store_entry['referenced_entity'];
     $form_mode = $store_entry['form_mode'];
@@ -288,8 +314,11 @@ class OverrideEntityForm extends FormBase {
 
     $response
       ->addCommand(new InvokeCommand("[data-entity-reference-override-value=\"$field_widget_id\"]", 'val', [Json::encode($values)]))
-      ->addCommand(new InvokeCommand("[data-entity-reference-override-update=\"$field_widget_id\"]", 'trigger', ['mousedown']))
       ->addCommand(new CloseDialogCommand());
+
+    foreach ($store_entry['ajax_commands'] as $command) {
+      $response->addCommand($command);
+    }
 
     return $response;
   }

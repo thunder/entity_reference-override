@@ -2,11 +2,11 @@
 
 namespace Drupal\entity_reference_override;
 
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\entity_reference_override\Plugin\Field\FieldWidget\EntityReferenceOverrideWidgetTrait;
 use Drupal\media_library\Plugin\Field\FieldWidget\MediaLibraryWidget;
+use Drupal\Core\Ajax\InvokeCommand;
 
 /**
  * Plugin implementation of the 'media_library_with_override_widget' widget.
@@ -35,32 +35,10 @@ class MediaLibraryWithOverrideWidget extends MediaLibraryWidget {
           'media-library-item__edit',
         ],
       ];
+      $widget_id = $element['media_library_update_widget']['#attributes']['data-media-library-widget-update'];
+      $element['selection'][$delta]['edit']['#entity_reference_override']['ajax_commands'][] = new InvokeCommand("[data-media-library-widget-update=\"$widget_id\"]", 'trigger', ['mousedown']);
     }
     return $element;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function updateOverrideFieldState(array $form, FormStateInterface $form_state) {
-    $button = $form_state->getTriggeringElement();
-
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -2));
-
-    $user_input = NestedArray::getValue($form_state->getUserInput(), $element['#parents']);
-    $values = NestedArray::getValue($form_state->getValues(), $element['#parents']);
-
-    foreach ($user_input as $key => $value) {
-      $values[$key]['overwritten_property_map'] = $value['overwritten_property_map'] ?? '{}';
-    }
-
-    unset($values['add_more']);
-
-    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -3));
-
-    $field_state = static::getWidgetState($element['#field_parents'], $element['#field_name'], $form_state);
-    $field_state['items'] = $values;
-    static::setWidgetState($element['#field_parents'], $element['#field_name'], $form_state, $field_state);
   }
 
 }
