@@ -3,6 +3,7 @@
 namespace Drupal\Tests\entity_reference_override\FunctionalJavascript;
 
 use Drupal\entity_test\Entity\EntityTest;
+use Drupal\FunctionalJavascriptTests\SortableTestTrait;
 use Drupal\Tests\media\Traits\MediaTypeCreationTrait;
 use Drupal\file\Entity\File;
 use Drupal\media\Entity\Media;
@@ -15,6 +16,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
 
   use MediaTypeCreationTrait;
   use TestFileCreationTrait;
+  use SortableTestTrait;
 
   /**
    * {@inheritdoc}
@@ -121,7 +123,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
   /**
    * Test edit form after multiple add items actions.
    */
-  public function testEditFormAfterSingleAddItems() {
+  public function testEditFormAfterMultipleAddItems() {
     $this->addMediaItems([0]);
     $this->addMediaItems([1]);
 
@@ -137,6 +139,36 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $this->assertSession()
       ->fieldValueEquals('field_description[0][value]', 'Override 1', $modal);
+    $this->getSession()->getPage()->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+
+    // Save the entity.
+    $this->getSession()->getPage()->pressButton('Save');
+    $this->drupalGet($this->entity->toUrl('edit-form'));
+    $this->assertSession()->fieldValueEquals('field_reference_override[selection][0][weight]', 0);
+    $this->assertSession()->fieldValueEquals('field_reference_override[selection][1][weight]', 1);
+
+    $this->assertSession()->elementExists('css', 'div[data-media-library-item-delta="0"] + div[data-media-library-item-delta="1"]');
+    $this->sortableTo('div[data-media-library-item-delta="1"]', 'div[data-media-library-item-delta="1"]', 'div.js-media-library-selection');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $this->assertSession()->elementExists('css', 'div[data-media-library-item-delta="1"] + div[data-media-library-item-delta="0"]');
+    $this->assertSession()->fieldValueEquals('field_reference_override[selection][0][weight]', 1);
+    $this->assertSession()->fieldValueEquals('field_reference_override[selection][1][weight]', 0);
+
+    // Check the override.
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->assertWaitOnAjaxRequest();
+    $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
+    $this->assertSession()
+      ->fieldValueEquals('field_description[0][value]', 'Override 1', $modal);
+    $this->getSession()->getPage()->find('css', '.ui-dialog button.form-submit')->click();
+    $this->assertSession()->assertWaitOnAjaxRequest();
+
+    // @todo Remove the return once
+    //   https://www.drupal.org/project/drupal/issues/3115054 has been fixed.
+    return;
+    // This assertion currently fails.
+    $this->assertSession()->elementExists('css', 'div[data-media-library-item-delta="1"] + div[data-media-library-item-delta="0"]');
   }
 
   /**
@@ -199,6 +231,31 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
     }
     $this->assertSession()->elementExists('css', '.ui-dialog-buttonpane')->pressButton('Insert selected');
     $this->assertSession()->assertWaitOnAjaxRequest();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function sortableUpdate($item, $from, $to = NULL) {
+    // See core/modules/media_library/js/media_library.widget.es6.js.
+    $script = <<<JS
+(function ($) {
+    var selection = document.querySelectorAll('.js-media-library-selection');
+    selection.forEach(function (widget) {
+        $(widget).children().each(function (index, child) {
+            $(child).find('.js-media-library-item-weight').val(index);
+        });
+    });
+})(jQuery)
+
+JS;
+
+    $options = [
+      'script' => $script,
+      'args'   => [],
+    ];
+
+    $this->getSession()->getDriver()->getWebDriverSession()->execute($options);
   }
 
 }
