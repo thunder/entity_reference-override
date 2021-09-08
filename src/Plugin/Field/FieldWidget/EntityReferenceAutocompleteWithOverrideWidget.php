@@ -57,6 +57,15 @@ class EntityReferenceAutocompleteWithOverrideWidget extends EntityReferenceAutoc
   /**
    * {@inheritdoc}
    */
+  protected function formMultipleElements(FieldItemListInterface $items, array &$form, FormStateInterface $form_state) {
+    $widget = parent::formMultipleElements($items, $form, $form_state);
+    $widget['#attached']['library'] = ['entity_reference_override/widget.entity_reference_autocomplete_with_override'];
+    return $widget;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function extractFormValues(FieldItemListInterface $items, array $form, FormStateInterface $form_state) {
     parent::extractFormValues($items, $form, $form_state);
 
