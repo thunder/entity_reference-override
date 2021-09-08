@@ -119,24 +119,17 @@ trait EntityReferenceOverrideWidgetTrait {
       ],
     ];
 
-    $modal_title = $this->t('Override %entity_type in context of %bundle "%label"', [
-      '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
-      '%bundle' => ucfirst($entity->bundle()),
-      '%label' => $entity->label(),
-    ]);
-
     $element['edit'] = [
       '#type' => 'button',
       '#name' => $field_name . '-' . $delta . '-entity-reference-override-edit-button' . $id_suffix,
-      '#value' => sprintf('Override %s in context of this %s',
-        $referenced_entity->getEntityType()->getSingularLabel(),
-        $entity->getEntityType()->getSingularLabel()),
-      '#modal_title' => $modal_title,
+      '#value' => $this->t('Edit %entity_type', [
+        '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
+      ]),
       '#ajax' => [
         'callback' => [static::class, 'openOverrideForm'],
         'progress' => [
           'type' => 'throbber',
-          'message' => $this->t('Opening override form.'),
+          'message' => $this->t('Opening edit form.'),
         ],
       ],
       '#attached' => [
@@ -171,17 +164,18 @@ trait EntityReferenceOverrideWidgetTrait {
    *   The response object.
    */
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
-    $button = $form_state->getTriggeringElement();
-    $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class, $button['#entity_reference_override']);
-    $dialog_options = static::overrideFormDialogOptions();
-
     if (!OverrideEntityForm::access(\Drupal::currentUser())) {
       return (new AjaxResponse())
         ->addCommand(new MessageCommand(t("You don't have access to set overrides for this item."), NULL, ['type' => 'warning']));
     }
 
+    $button = $form_state->getTriggeringElement();
+    $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class, $button['#entity_reference_override']);
+
+    $referenced_entity_type_label = $button['#entity_reference_override']['referenced_entity']->getEntityType()->getSingularLabel();
+
     return (new AjaxResponse())
-      ->addCommand(new OpenModalDialogCommand($button['#modal_title'], $override_form, $dialog_options));
+      ->addCommand(new OpenModalDialogCommand(t('Edit %referenced_entity_type_label', ['%referenced_entity_type_label' => $referenced_entity_type_label]), $override_form, static::overrideFormDialogOptions()));
   }
 
   /**

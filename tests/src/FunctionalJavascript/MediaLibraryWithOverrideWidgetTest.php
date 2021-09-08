@@ -82,7 +82,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
   public function testEditFormAfterItemReOrder() {
     $this->addMediaItems([0, 1]);
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Override 1');
@@ -94,27 +94,27 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
     $this->getSession()->getPage()->fillField('field_reference_override[selection][0][weight]', '1');
     $this->getSession()->getPage()->fillField('field_reference_override[selection][1][weight]', '0');
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-1"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-1"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Override 2');
     $this->getSession()->getPage()->find('css', '.ui-dialog button.form-submit')->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-1"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-1"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()
       ->fieldValueEquals('field_description[0][value]', 'Override 2', $modal);
     $this->getSession()->getPage()->find('css', '.ui-dialog .ui-dialog-titlebar-close')->click();
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Override 12');
     $this->getSession()->getPage()->find('css', '.ui-dialog button.form-submit')->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-1"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-1"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()
       ->fieldValueEquals('field_description[0][value]', 'Override 2', $modal);
@@ -127,14 +127,14 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
     $this->addMediaItems([0]);
     $this->addMediaItems([1]);
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Override 1');
     $this->getSession()->getPage()->find('css', '.ui-dialog button.form-submit')->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $this->assertSession()
@@ -156,7 +156,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
     $this->assertSession()->fieldValueEquals('field_reference_override[selection][1][weight]', 0);
 
     // Check the override.
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $this->assertSession()
@@ -179,7 +179,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
   public function testEditFormThenAddAndEditAgain() {
     $this->addMediaItems([0]);
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Override 1');
@@ -188,7 +188,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
 
     $this->addMediaItems([1]);
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $this->assertSession()
@@ -201,7 +201,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
   public function testOnExistingEntity() {
     $this->addMediaItems([0]);
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Override 1');
@@ -212,7 +212,7 @@ class MediaLibraryWithOverrideWidgetTest extends EntityReferenceOverrideTestBase
 
     $this->drupalGet($this->entity->toUrl('edit-form'));
 
-    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Override media item in context of this test entity');
+    $this->assertSession()->elementExists('css', '[data-drupal-selector="edit-field-reference-override-selection-0"]')->pressButton('Edit media item');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $this->getSession()->getPage()->find('css', '.ui-dialog');
     $this->assertSession()
