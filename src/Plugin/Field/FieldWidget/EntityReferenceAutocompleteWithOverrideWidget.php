@@ -48,6 +48,8 @@ class EntityReferenceAutocompleteWithOverrideWidget extends EntityReferenceAutoc
       'callback' => [static::class, 'rebuildAutocompleteWidget'],
       'event' => 'autocompleteclose change',
     ];
+    // Workaround for IEF. Without, ::extractFormValues() is not executed.
+    $widget['target_id']['#ief_submit_trigger'] = TRUE;
     $widget['edit']['#weight'] = $widget['target_id']['#weight'];
     return $widget;
   }

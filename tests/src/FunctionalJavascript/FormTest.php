@@ -152,7 +152,6 @@ class FormTest extends EntityReferenceOverrideTestBase {
     $referenced_entity->save();
     $entity = EntityTest::create([
       'name' => 'Ief entity',
-      'field_reference_override' => $referenced_entity,
     ]);
     $entity->save();
 
@@ -168,6 +167,11 @@ class FormTest extends EntityReferenceOverrideTestBase {
     ]));
 
     $this->drupalGet($main_entity->toUrl('edit-form'));
+
+    $autocomplete_field = $this->getSession()->getPage()->findField('field_ief[0][inline_entity_form][field_reference_override][0][target_id]');
+    $autocomplete_field->setValue('Original name');
+    $this->getSession()->getDriver()->keyDown($autocomplete_field->getXpath(), ' ');
+    $this->assertSession()->waitOnAutocomplete();
 
     $page = $this->getSession()->getPage();
 
