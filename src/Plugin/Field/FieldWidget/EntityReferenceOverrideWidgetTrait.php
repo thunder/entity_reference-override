@@ -88,7 +88,24 @@ trait EntityReferenceOverrideWidgetTrait {
   }
 
   /**
-   * {@inheritdoc}
+   * Adds the edit form elements to the passed element.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $items
+   *   Array of default values for this field.
+   * @param int $delta
+   *   The order of this item in the array of sub-elements (0, 1, 2, etc.).
+   * @param array $element
+   *   A form element array.
+   * @param array $form
+   *   The form structure where widgets are being attached to. This might be a
+   *   full form structure, or a sub-element of a larger form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return array
+   *   The form elements for a widget with the edit form elements.
+   *
+   * @throws \Drupal\Core\TypedData\Exception\MissingDataException
    */
   public function addEditFormElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $entity = $items->getEntity();
@@ -96,6 +113,15 @@ trait EntityReferenceOverrideWidgetTrait {
 
     if (empty($items->referencedEntities()[$delta])) {
       return $element;
+    }
+
+    /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
+    $referenced_entity = $items->get($delta)->entity;
+    if ($referenced_entity->isNew()) {
+      return $element;
+    }
+    if ($referenced_entity->hasTranslation($entity->language()->getId())) {
+      $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
     }
 
     $parents = $form['#parents'];
@@ -110,12 +136,6 @@ trait EntityReferenceOverrideWidgetTrait {
       $field_name . '-' . $delta,
       $id_suffix,
     ]));
-
-    /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
-    $referenced_entity = $items->get($delta)->entity;
-    if ($referenced_entity->hasTranslation($entity->language()->getId())) {
-      $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
-    }
 
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
