@@ -24,7 +24,7 @@ use Drupal\Core\Ajax\ReplaceCommand;
 class EntityReferenceAutocompleteWithOverrideWidget extends EntityReferenceAutocompleteWidget {
 
   use EntityReferenceOverrideWidgetTrait {
-    formElement as singleFormElement;
+    formElement as traitFormElement;
   }
 
   /**
@@ -42,16 +42,16 @@ class EntityReferenceAutocompleteWithOverrideWidget extends EntityReferenceAutoc
    * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    $widget = $this->singleFormElement($items, $delta, $element, $form, $form_state);
+    $element = $this->traitFormElement($items, $delta, $element, $form, $form_state);
 
-    $widget['target_id']['#ajax'] = [
+    $element['target_id']['#ajax'] = [
       'callback' => [static::class, 'rebuildAutocompleteWidget'],
       'event' => 'autocompleteclose change',
     ];
     // Workaround for IEF. Without, ::extractFormValues() is not executed.
-    $widget['target_id']['#ief_submit_trigger'] = TRUE;
-    $widget['edit']['#weight'] = $widget['target_id']['#weight'];
-    return $widget;
+    $element['target_id']['#ief_submit_trigger'] = TRUE;
+    $element['edit']['#weight'] = $element['target_id']['#weight'];
+    return $element;
   }
 
   /**

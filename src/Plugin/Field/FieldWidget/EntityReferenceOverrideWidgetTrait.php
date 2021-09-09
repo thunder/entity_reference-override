@@ -82,8 +82,15 @@ trait EntityReferenceOverrideWidgetTrait {
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     if (!$this->handlesMultipleValues()) {
       $element = parent::formElement($items, $delta, $element, $form, $form_state);
+      $element = $this->addEditFormElement($items, $delta, $element, $form, $form_state);
     }
+    return $element;
+  }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function addEditFormElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $entity = $items->getEntity();
     $field_name = $this->fieldDefinition->getName();
 
