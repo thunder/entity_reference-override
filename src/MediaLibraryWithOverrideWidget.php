@@ -18,9 +18,7 @@ use Drupal\Core\Ajax\InvokeCommand;
  */
 class MediaLibraryWithOverrideWidget extends MediaLibraryWidget {
 
-  use EntityReferenceOverrideWidgetTrait {
-    formElement as singleFormElement;
-  }
+  use EntityReferenceOverrideWidgetTrait;
 
   /**
    * {@inheritdoc}
@@ -29,7 +27,7 @@ class MediaLibraryWithOverrideWidget extends MediaLibraryWidget {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
 
     foreach ($items->referencedEntities() as $delta => $media_item) {
-      $element['selection'][$delta] += $this->singleFormElement($items, $delta, [], $form, $form_state);
+      $element['selection'][$delta] = $this->addEditFormElement($items, $delta, $element['selection'][$delta], $form, $form_state);
       $element['selection'][$delta]['edit']['#attributes'] = [
         'class' => [
           'media-library-item__edit',

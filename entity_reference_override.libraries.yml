@@ -1,0 +1,4 @@
+widget.entity_reference_autocomplete_with_override:
+  css:
+    theme:
+      css/widget/entity_reference_autocomplete_with_override.css: {}

@@ -62,14 +62,14 @@ class FormTest extends EntityReferenceOverrideTestBase {
 
     // Check that only properties with different values are saved to the hidden
     // field.
-    $page->pressButton('Override test entity - data table in context of this test entity');
+    $page->pressButton('Edit test entity - data table');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $page->find('css', '.ui-dialog button.form-submit')->click();
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()->hiddenFieldValueEquals('field_reference_override-0-entity-reference-override-map', '[]');
 
     // Check that form validation errors are shown.
-    $page->pressButton('Override test entity - data table in context of this test entity');
+    $page->pressButton('Edit test entity - data table');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $page->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', '');
@@ -83,7 +83,7 @@ class FormTest extends EntityReferenceOverrideTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
 
     // Open modal again to check if values persist.
-    $page->pressButton('Override test entity - data table in context of this test entity');
+    $page->pressButton('Edit test entity - data table');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()
       ->fieldValueEquals('field_description[0][value]', 'Overridden description', $modal);
@@ -168,7 +168,7 @@ class FormTest extends EntityReferenceOverrideTestBase {
 
     $page = $this->getSession()->getPage();
 
-    $page->pressButton('Override test entity - data table in context of this test entity');
+    $page->pressButton('Edit test entity - data table');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $page->find('css', '.ui-dialog');
     $modal->fillField('field_description[0][value]', 'Overridden description');
@@ -176,7 +176,7 @@ class FormTest extends EntityReferenceOverrideTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
 
     // Open modal again to check if values persist.
-    $page->pressButton('Override test entity - data table in context of this test entity');
+    $page->pressButton('Edit test entity - data table');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()
       ->fieldValueEquals('field_description[0][value]', 'Overridden description', $modal);
@@ -217,7 +217,7 @@ class FormTest extends EntityReferenceOverrideTestBase {
     $page = $this->getSession()->getPage();
 
     // Check that form validation errors are shown.
-    $page->pressButton('Override test entity - data table in context of this test entity');
+    $page->pressButton('Edit test entity - data table');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $modal = $page->find('css', '.ui-dialog');
     $this->assertSession()->elementTextNotContains('css', '.ui-dialog', 'Test text-field field is required.');
@@ -226,7 +226,7 @@ class FormTest extends EntityReferenceOverrideTestBase {
     $this->assertSession()->assertWaitOnAjaxRequest();
 
     // Open modal again to check if values persist.
-    $page->pressButton('Override test entity - data table in context of this test entity');
+    $page->pressButton('Edit test entity - data table');
     $this->assertSession()->assertWaitOnAjaxRequest();
     $this->assertSession()->elementTextNotContains('css', '.ui-dialog', 'Test text-field field is required.');
     $this->assertSession()

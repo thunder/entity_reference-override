@@ -82,13 +82,46 @@ trait EntityReferenceOverrideWidgetTrait {
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     if (!$this->handlesMultipleValues()) {
       $element = parent::formElement($items, $delta, $element, $form, $form_state);
+      $element = $this->addEditFormElement($items, $delta, $element, $form, $form_state);
     }
+    return $element;
+  }
 
+  /**
+   * Adds the edit form elements to the passed element.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $items
+   *   Array of default values for this field.
+   * @param int $delta
+   *   The order of this item in the array of sub-elements (0, 1, 2, etc.).
+   * @param array $element
+   *   A form element array.
+   * @param array $form
+   *   The form structure where widgets are being attached to. This might be a
+   *   full form structure, or a sub-element of a larger form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return array
+   *   The form elements for a widget with the edit form elements.
+   *
+   * @throws \Drupal\Core\TypedData\Exception\MissingDataException
+   */
+  public function addEditFormElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $entity = $items->getEntity();
     $field_name = $this->fieldDefinition->getName();
 
     if (empty($items->referencedEntities()[$delta])) {
       return $element;
+    }
+
+    /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
+    $referenced_entity = $items->get($delta)->entity;
+    if ($referenced_entity->isNew()) {
+      return $element;
+    }
+    if ($referenced_entity->hasTranslation($entity->language()->getId())) {
+      $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
     }
 
     $parents = $form['#parents'];
@@ -104,12 +137,6 @@ trait EntityReferenceOverrideWidgetTrait {
       $id_suffix,
     ]));
 
-    /** @var \Drupal\Core\Entity\EntityInterface $referenced_entity */
-    $referenced_entity = $items->get($delta)->entity;
-    if ($referenced_entity->hasTranslation($entity->language()->getId())) {
-      $referenced_entity = $referenced_entity->getTranslation($entity->language()->getId());
-    }
-
     $element['overwritten_property_map'] = [
       '#type' => 'hidden',
       '#name' => $field_name . '-' . $delta . '-entity-reference-override-map' . $id_suffix,
@@ -119,24 +146,17 @@ trait EntityReferenceOverrideWidgetTrait {
       ],
     ];
 
-    $modal_title = $this->t('Override %entity_type in context of %bundle "%label"', [
-      '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
-      '%bundle' => ucfirst($entity->bundle()),
-      '%label' => $entity->label(),
-    ]);
-
     $element['edit'] = [
       '#type' => 'button',
       '#name' => $field_name . '-' . $delta . '-entity-reference-override-edit-button' . $id_suffix,
-      '#value' => sprintf('Override %s in context of this %s',
-        $referenced_entity->getEntityType()->getSingularLabel(),
-        $entity->getEntityType()->getSingularLabel()),
-      '#modal_title' => $modal_title,
+      '#value' => $this->t('Edit %entity_type', [
+        '%entity_type' => $referenced_entity->getEntityType()->getSingularLabel(),
+      ]),
       '#ajax' => [
         'callback' => [static::class, 'openOverrideForm'],
         'progress' => [
           'type' => 'throbber',
-          'message' => $this->t('Opening override form.'),
+          'message' => $this->t('Opening edit form.'),
         ],
       ],
       '#attached' => [
@@ -171,17 +191,18 @@ trait EntityReferenceOverrideWidgetTrait {
    *   The response object.
    */
   public static function openOverrideForm(array $form, FormStateInterface $form_state) {
-    $button = $form_state->getTriggeringElement();
-    $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class, $button['#entity_reference_override']);
-    $dialog_options = static::overrideFormDialogOptions();
-
     if (!OverrideEntityForm::access(\Drupal::currentUser())) {
       return (new AjaxResponse())
         ->addCommand(new MessageCommand(t("You don't have access to set overrides for this item."), NULL, ['type' => 'warning']));
     }
 
+    $button = $form_state->getTriggeringElement();
+    $override_form = \Drupal::formBuilder()->getForm(OverrideEntityForm::class, $button['#entity_reference_override']);
+
+    $referenced_entity_type_label = $button['#entity_reference_override']['referenced_entity']->getEntityType()->getSingularLabel();
+
     return (new AjaxResponse())
-      ->addCommand(new OpenModalDialogCommand($button['#modal_title'], $override_form, $dialog_options));
+      ->addCommand(new OpenModalDialogCommand(t('Edit %referenced_entity_type_label', ['%referenced_entity_type_label' => $referenced_entity_type_label]), $override_form, static::overrideFormDialogOptions()));
   }
 
   /**
